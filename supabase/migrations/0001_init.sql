@@ -171,3 +171,8 @@ create table if not exists public.github_events (
 -- Realtime 발행 (명세 6.3 board:{boardId} 채널 = cards/columns CDC)
 alter publication supabase_realtime add table public.cards;
 alter publication supabase_realtime add table public.columns;
+
+-- 회의록 음성/첨부 저장 버킷 (명세 8.3-1, Supabase Storage)
+insert into storage.buckets (id, name, public)
+values ('meetings', 'meetings', false)
+on conflict (id) do nothing;

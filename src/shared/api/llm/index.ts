@@ -1,10 +1,22 @@
 import "server-only";
 
 import { serverEnv } from "@/shared/config/env";
+import { z } from "zod";
 import {
   parseClassification,
   type Classification,
 } from "@/shared/lib/parse-llm-json";
+
+const meetingSchema = z.object({
+  summary: z.string(),
+  actionItems: z.array(
+    z.object({
+      title: z.string(),
+      suggestedAssignee: z.string().nullable().optional(),
+    }),
+  ),
+});
+export type MeetingExtract = z.infer<typeof meetingSchema>;
 
 const PROMPT = (title: string, description: string) =>
   `다음 작업을 [Bug, Feature, Refactor, Docs, Chore] 중 하나로 분류하고 ` +
@@ -39,19 +51,9 @@ function trackUsage(provider: string, promptChars: number) {
   );
 }
 
-/** 명세 8.2: 카드 본문 → {category, priority, confidence} (추천만) */
-export async function classifyTask(input: {
-  title: string;
-  description: string;
-}): Promise<Classification> {
+/** provider 추상화된 단일 프롬프트 호출 (키 필요) */
+async function callLLM(prompt: string, maxTokens: number): Promise<string> {
   const env = serverEnv();
-  const prompt = PROMPT(input.title, input.description);
-
-  if (!env.LLM_API_KEY) {
-    trackUsage("stub", prompt.length);
-    return heuristic(input.title, input.description);
-  }
-
   trackUsage(env.LLM_PROVIDER, prompt.length);
 
   if (env.LLM_PROVIDER === "anthropic") {
@@ -64,17 +66,14 @@ export async function classifyTask(input: {
       },
       body: JSON.stringify({
         model: env.LLM_MODEL,
-        max_tokens: 200,
+        max_tokens: maxTokens,
         messages: [{ role: "user", content: prompt }],
       }),
     });
-    const json = (await res.json()) as {
-      content?: { text?: string }[];
-    };
-    return parseClassification(json.content?.[0]?.text ?? "");
+    const json = (await res.json()) as { content?: { text?: string }[] };
+    return json.content?.[0]?.text ?? "";
   }
 
-  // OpenAI 호환
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -90,5 +89,43 @@ export async function classifyTask(input: {
   const json = (await res.json()) as {
     choices?: { message?: { content?: string } }[];
   };
-  return parseClassification(json.choices?.[0]?.message?.content ?? "");
+  return json.choices?.[0]?.message?.content ?? "";
+}
+
+/** 명세 8.2: 카드 본문 → {category, priority, confidence} (추천만) */
+export async function classifyTask(input: {
+  title: string;
+  description: string;
+}): Promise<Classification> {
+  const env = serverEnv();
+  const prompt = PROMPT(input.title, input.description);
+
+  if (!env.LLM_API_KEY) {
+    trackUsage("stub", prompt.length);
+    return heuristic(input.title, input.description);
+  }
+  return parseClassification(await callLLM(prompt, 200));
+}
+
+/** 명세 8.3-3: transcript → 요약 + action items */
+export async function summarizeMeeting(
+  transcript: string,
+): Promise<MeetingExtract> {
+  const env = serverEnv();
+  if (!env.LLM_API_KEY || !transcript.trim()) {
+    trackUsage("stub", transcript.length);
+    return {
+      summary: transcript.slice(0, 280),
+      actionItems: [],
+    };
+  }
+  const prompt =
+    `다음 회의록을 한국어로 3~5문장 요약하고, 실행 가능한 작업(action items)을 ` +
+    `추출하라. JSON 형식으로만 출력: ` +
+    `{"summary":"...","actionItems":[{"title":"...","suggestedAssignee":null}]}\n\n` +
+    transcript;
+  const raw = await callLLM(prompt, 800);
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error("회의록 추출 JSON 파싱 실패");
+  return meetingSchema.parse(JSON.parse(match[0]));
 }
