@@ -11,6 +11,7 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useBoardStore } from "@/entities/board/model/store";
+import { useBoardRealtime } from "@/entities/board/model/use-board-realtime";
 import { useCardDnd } from "@/features/card-drag/model/use-card-dnd";
 import type { BoardWithColumns } from "@/shared/types/database";
 import { BoardColumn } from "./board-column";
@@ -19,6 +20,7 @@ export function BoardView({ initial }: { initial: BoardWithColumns }) {
   const setBoard = useBoardStore((s) => s.setBoard);
   const columns = useBoardStore((s) => s.columns);
   const { onDragEnd } = useCardDnd(initial.id);
+  useBoardRealtime(initial.id);
 
   useEffect(() => {
     setBoard(initial);
