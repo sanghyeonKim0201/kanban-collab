@@ -11,6 +11,16 @@ import type {
   UserProfile,
 } from "@/shared/types/database";
 
+export async function listAllMyBoards(): Promise<Board[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("boards")
+    .select("*")
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 export async function getBoard(boardId: string): Promise<Board | null> {
   const supabase = createClient();
   const { data } = await supabase
