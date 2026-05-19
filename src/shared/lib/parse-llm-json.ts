@@ -1,0 +1,29 @@
+import { z } from "zod";
+
+export const CATEGORIES = [
+  "Bug",
+  "Feature",
+  "Refactor",
+  "Docs",
+  "Chore",
+] as const;
+
+export const classificationSchema = z.object({
+  category: z.enum(CATEGORIES),
+  priority: z.enum(["low", "medium", "high"]),
+  confidence: z.number().min(0).max(1),
+});
+
+export type Classification = z.infer<typeof classificationSchema>;
+
+/**
+ * 명세 8.2: LLM 응답에서 JSON 추출 → 검증.
+ * 코드펜스/잡텍스트를 제거하고 첫 번째 JSON 오브젝트를 파싱한다.
+ */
+export function parseClassification(raw: string): Classification {
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenced?.[1] ?? raw;
+  const match = candidate.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error("LLM 응답에서 JSON 을 찾을 수 없습니다");
+  return classificationSchema.parse(JSON.parse(match[0]));
+}

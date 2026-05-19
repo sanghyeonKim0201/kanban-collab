@@ -3,7 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Github, Sparkles } from "lucide-react";
+import { Github } from "lucide-react";
+import { ClassifyPanel } from "@/features/ai-classify-card/ui/classify-panel";
 import {
   addComment,
   assignCard,
@@ -146,17 +147,11 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
         </div>
       </div>
 
-      {/* M4 AI 분류 연결점 */}
-      <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-        <p className="flex items-center gap-1.5 font-medium">
-          <Sparkles className="h-3.5 w-3.5" /> AI 분류
-        </p>
-        <p className="mt-1">
-          {card.ai_category
-            ? `추천 카테고리: ${card.ai_category} (적용/거부는 추천 UI 에서)`
-            : "LLM 키 설정 시 카드 본문 기반 카테고리/우선순위 추천 (M4)"}
-        </p>
-      </div>
+      <ClassifyPanel
+        cardId={card.id}
+        boardId={boardId}
+        currentCategory={card.ai_category}
+      />
 
       {/* M3 GitHub 링크 연결점 */}
       <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
