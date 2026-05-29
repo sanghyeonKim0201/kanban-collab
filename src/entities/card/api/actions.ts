@@ -10,6 +10,10 @@ const createSchema = z.object({
   columnId: z.string().uuid(),
   title: z.string().trim().min(1, "제목을 입력하세요").max(200),
   boardId: z.string().uuid(),
+  description: z.string().trim().max(10_000).optional(),
+  priority: z.enum(["low", "medium", "high"]).default("medium"),
+  dueDate: z.string().datetime().nullable().optional(),
+  assigneeIds: z.array(z.string().uuid()).default([]),
 });
 
 const updateSchema = z.object({
@@ -21,13 +25,18 @@ const updateSchema = z.object({
   github_url: z.string().url().nullable().optional(),
 });
 
-/** createCard — position 은 컬럼 마지막 카드 다음 (명세 6.2) */
+/** createCard — position 은 컬럼 마지막 카드 다음 (명세 6.2, FR-03) */
 export async function createCard(input: {
   columnId: string;
   title: string;
   boardId: string;
+  description?: string;
+  priority?: "low" | "medium" | "high";
+  dueDate?: string | null;
+  assigneeIds?: string[];
 }) {
-  const { columnId, title, boardId } = createSchema.parse(input);
+  const { columnId, title, boardId, description, priority, dueDate, assigneeIds } =
+    createSchema.parse(input);
   const { supabase, user } = await requireUser();
 
   const { data: lastCard } = await supabase
@@ -42,10 +51,25 @@ export async function createCard(input: {
 
   const { data, error } = await supabase
     .from("cards")
-    .insert({ column_id: columnId, title, position, created_by: user.id })
+    .insert({
+      column_id: columnId,
+      title,
+      position,
+      created_by: user.id,
+      description: description || null,
+      priority,
+      due_date: dueDate || null,
+    })
     .select("id")
     .single();
   if (error) throw new Error(error.message);
+
+  if (assigneeIds.length > 0) {
+    const { error: aErr } = await supabase
+      .from("card_assignees")
+      .insert(assigneeIds.map((uid) => ({ card_id: data.id, user_id: uid })));
+    if (aErr) throw new Error(aErr.message);
+  }
 
   revalidatePath(`/board/${boardId}`);
   return data.id as string;
@@ -148,6 +172,17 @@ export async function addComment(
   const { error } = await supabase
     .from("comments")
     .insert({ card_id: cardId, author_id: user.id, content: trimmed });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/board/${boardId}`);
+}
+
+/** 본인 댓글만 삭제 가능 (RLS: comments delete own) */
+export async function deleteComment(commentId: string, boardId: string) {
+  const { supabase } = await requireUser();
+  const { error } = await supabase
+    .from("comments")
+    .delete()
+    .eq("id", commentId);
   if (error) throw new Error(error.message);
   revalidatePath(`/board/${boardId}`);
 }

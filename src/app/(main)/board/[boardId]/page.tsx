@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getBoardWithColumnsAndCards } from "@/entities/board/api/queries";
+import { listMembers } from "@/entities/workspace/api/queries";
 import { getCurrentUser } from "@/entities/user/api/current-user";
 import { BoardView } from "@/widgets/board-view/ui/board-view";
 import { CollaborationLayer } from "@/processes/realtime-collaboration/ui/collaboration-layer";
@@ -17,9 +18,11 @@ export default async function BoardPage({
   ]);
   if (!board) notFound();
 
+  const members = await listMembers(board.workspace_id);
+
   return (
     <>
-      <BoardView initial={board} />
+      <BoardView initial={board} members={members} />
       {user && (
         <CollaborationLayer
           boardId={board.id}

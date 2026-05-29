@@ -3,11 +3,14 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Github } from "lucide-react";
+import { Github, Trash2, X } from "lucide-react";
 import { ClassifyPanel } from "@/features/ai-classify-card/ui/classify-panel";
+import { LabelEditor } from "@/features/card-label/ui/label-editor";
 import {
   addComment,
   assignCard,
+  deleteCard,
+  deleteComment,
   unassignCard,
   updateCard,
 } from "@/entities/card/api/actions";
@@ -23,10 +26,12 @@ const PRIORITIES: Priority[] = ["low", "medium", "high"];
 
 export function CardDetailPanel({ detail }: { detail: CardDetail }) {
   const router = useRouter();
-  const { card, boardId, members, assignees, comments } = detail;
+  const { card, boardId, members, assignees, comments, currentUserId, labels, boardLabels } =
+    detail;
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description ?? "");
   const [priority, setPriority] = useState<Priority>(card.priority);
+  const [dueDate, setDueDate] = useState(card.due_date?.slice(0, 10) ?? "");
   const [comment, setComment] = useState("");
   const [pending, start] = useTransition();
   const assignedIds = new Set(assignees.map((a) => a.id));
@@ -40,6 +45,7 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
             title: title.trim(),
             description: description.trim() || null,
             priority,
+            due_date: dueDate ? new Date(dueDate).toISOString() : null,
           },
           boardId,
         );
@@ -47,6 +53,31 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
         router.refresh();
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "저장 실패");
+      }
+    });
+  }
+
+  function removeCard() {
+    if (!window.confirm("이 카드를 삭제할까요? 되돌릴 수 없습니다.")) return;
+    start(async () => {
+      try {
+        await deleteCard(card.id, boardId);
+        toast.success("카드 삭제됨");
+        router.push(`/board/${boardId}`);
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "카드 삭제 실패");
+      }
+    });
+  }
+
+  function removeComment(id: string) {
+    start(async () => {
+      try {
+        await deleteComment(id, boardId);
+        router.refresh();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "댓글 삭제 실패");
       }
     });
   }
@@ -117,6 +148,16 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
       </div>
 
       <div>
+        <p className="mb-1 text-xs font-medium text-muted-foreground">마감일</p>
+        <Input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          className="w-auto"
+        />
+      </div>
+
+      <div>
         <p className="mb-1 text-xs font-medium text-muted-foreground">담당자</p>
         <div className="flex flex-wrap gap-2">
           {members.map((m) => {
@@ -147,6 +188,13 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
         </div>
       </div>
 
+      <LabelEditor
+        cardId={card.id}
+        boardId={boardId}
+        attached={labels}
+        boardLabels={boardLabels}
+      />
+
       <ClassifyPanel
         cardId={card.id}
         boardId={boardId}
@@ -165,18 +213,44 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
         </p>
       </div>
 
-      <Button onClick={save} disabled={pending} className="w-full">
-        {pending ? "저장 중…" : "저장"}
-      </Button>
+      <div className="flex gap-2">
+        <Button onClick={save} disabled={pending} className="flex-1">
+          {pending ? "저장 중…" : "저장"}
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={removeCard}
+          disabled={pending}
+          aria-label="카드 삭제"
+          title="카드 삭제"
+          className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
 
       <div>
         <p className="mb-2 text-sm font-semibold">댓글 ({comments.length})</p>
         <div className="space-y-2">
           {comments.map((c) => (
-            <div key={c.id} className="rounded-md border p-2 text-sm">
-              <p className="mb-0.5 text-xs text-muted-foreground">
-                {c.author?.display_name ?? c.author?.email ?? "익명"}
-              </p>
+            <div key={c.id} className="group rounded-md border p-2 text-sm">
+              <div className="mb-0.5 flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {c.author?.display_name ?? c.author?.email ?? "익명"}
+                </p>
+                {c.author_id === currentUserId && (
+                  <button
+                    type="button"
+                    onClick={() => removeComment(c.id)}
+                    disabled={pending}
+                    aria-label="댓글 삭제"
+                    className="text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
               {c.content}
             </div>
           ))}

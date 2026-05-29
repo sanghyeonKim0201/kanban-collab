@@ -18,22 +18,18 @@ async function requireUser() {
 
 export async function createWorkspace(formData: FormData) {
   const name = nameSchema.parse(formData.get("name"));
-  const { supabase, user } = await requireUser();
+  const { supabase } = await requireUser();
 
-  const { data: ws, error } = await supabase
-    .from("workspaces")
-    .insert({ name })
-    .select("id")
-    .single();
+  // 워크스페이스 + 생성자 owner 멤버십을 원자적으로 생성한다.
+  // 직접 insert + .select() 는 생성 직후 멤버가 없어 SELECT RLS 되읽기가
+  // 막히므로(닭-달걀), SECURITY DEFINER RPC 로 처리한다. (0003 마이그레이션)
+  const { data: id, error } = await supabase.rpc("create_workspace", {
+    ws_name: name,
+  });
   if (error) throw new Error(error.message);
 
-  const { error: mErr } = await supabase
-    .from("workspace_members")
-    .insert({ workspace_id: ws.id, user_id: user.id, role: "owner" });
-  if (mErr) throw new Error(mErr.message);
-
   revalidatePath("/workspaces");
-  return ws.id as string;
+  return id as string;
 }
 
 export async function createBoard(workspaceId: string, formData: FormData) {

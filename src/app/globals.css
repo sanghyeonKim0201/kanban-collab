@@ -2,51 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 명세 2.1 / 10.3: shadcn 기반 일관 UI · 흑백 톤 디자인 시스템 */
+/* 명세 2.1 / 10.3: shadcn 기반 일관 UI
+ * 디자인 시스템(ui-ux-pro-max): Soft UI Evolution
+ * slate 쿨톤 베이스 + green 액센트("코드는 다크, 실행은 그린") */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
+    --background: 210 40% 98%;        /* slate-50 */
+    --foreground: 222 47% 11%;        /* slate-900 */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 9%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 142 72% 33%;           /* green-600/700 — 실행/생성 CTA (대비 AA) */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;         /* slate-100 */
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;             /* slate-100 */
+    --muted-foreground: 215 16% 47%;  /* slate-500 */
+    --accent: 142 60% 95%;            /* green-50 tint (hover/활성) */
+    --accent-foreground: 142 72% 29%; /* green-700 */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 0 0% 9%;
-    --radius: 0.5rem;
+    --border: 214 32% 91%;            /* slate-200 */
+    --input: 214 32% 91%;
+    --ring: 142 72% 33%;              /* green focus */
+    --radius: 0.65rem;
   }
 
   .dark {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 95%;
-    --card: 0 0% 9%;
-    --card-foreground: 0 0% 95%;
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 0 0% 95%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 60%;
-    --accent: 0 0% 18%;
-    --accent-foreground: 0 0% 95%;
-    --destructive: 0 62% 45%;
+    /* 중성(neutral) 검정/회색 — 채도 0, 푸른빛 제거. green 액센트만 brand 유지 */
+    --background: 0 0% 7%;           /* #121212 near-black */
+    --foreground: 0 0% 96%;
+    --card: 0 0% 14%;                /* #242424 — 컬럼보다 밝게(elevation) */
+    --card-foreground: 0 0% 96%;
+    --popover: 0 0% 14%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 142 69% 45%;          /* green */
+    --primary-foreground: 0 0% 8%;
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 0 0% 16%;               /* 컬럼 bg-muted/60 */
+    --muted-foreground: 0 0% 64%;    /* #a3a3a3 */
+    --accent: 142 32% 16%;           /* deep green tint (활성/hover) */
+    --accent-foreground: 142 50% 78%;
+    --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 0 0% 80%;
+    --border: 0 0% 20%;              /* #333 */
+    --input: 0 0% 20%;
+    --ring: 142 69% 45%;             /* green focus */
   }
 }
 
@@ -55,7 +58,13 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "cv11" 1, "ss01" 1;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading tracking-tight;
   }
 }
