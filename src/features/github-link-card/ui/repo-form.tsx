@@ -33,13 +33,15 @@ export function RepoForm({
   }
 
   return (
-    <div className="flex items-center gap-2 rounded-md border p-3">
-      <span className="w-40 truncate text-sm font-medium">{boardName}</span>
+    <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-2 px-4 py-3">
+      <span className="w-40 truncate text-sm font-medium text-foreground">
+        {boardName}
+      </span>
       <Input
         value={repo}
         placeholder="owner/repo"
         onChange={(e) => setRepo(e.target.value)}
-        className="flex-1"
+        className="flex-1 font-mono text-xs"
       />
       <Button size="sm" onClick={save} disabled={pending}>
         {pending ? "저장 중…" : "연결"}

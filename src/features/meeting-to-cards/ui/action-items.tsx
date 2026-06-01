@@ -64,27 +64,29 @@ export function ActionItems({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">대상</span>
-        <select
-          value={columnId}
-          onChange={(e) => setColumnId(e.target.value)}
-          className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-        >
-          {flatColumns.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {flatColumns.length > 0 && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">대상 컬럼</span>
+          <select
+            value={columnId}
+            onChange={(e) => setColumnId(e.target.value)}
+            className="h-8 rounded-lg border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            {flatColumns.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <ul className="space-y-2">
         {items.map((it) => (
           <li
             key={it.id}
-            className="flex items-center gap-2 rounded-md border p-2 text-sm"
+            className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2.5 text-sm"
           >
-            <span className="flex-1">{it.title}</span>
+            <span className="flex-1 text-foreground">{it.title}</span>
             {it.suggested_assignee && (
               <span className="text-xs text-muted-foreground">
                 @{it.suggested_assignee}
@@ -92,16 +94,15 @@ export function ActionItems({
             )}
             {it.card_id ? (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Check className="h-3.5 w-3.5" /> 카드 연결됨
+                <Check className="h-3.5 w-3.5 text-success" /> 카드 연결됨
               </span>
             ) : (
               <Button
                 size="sm"
-                variant="outline"
                 disabled={pending}
                 onClick={() => makeCard(it)}
               >
-                <Plus className="h-3.5 w-3.5" /> 카드로 만들기
+                <Plus className="h-3.5 w-3.5" /> 카드로 보내기
               </Button>
             )}
           </li>
