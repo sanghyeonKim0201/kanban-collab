@@ -44,6 +44,19 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        surface: "hsl(var(--surface))",
+        "surface-2": "hsl(var(--surface-2))",
+        "border-strong": "hsl(var(--border-strong))",
+        success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
+      },
+      fontFamily: {
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+      },
+      boxShadow: {
+        card: "0 1px 2px rgba(0,0,0,0.4)",
+        elevated: "0 8px 30px rgba(0,0,0,0.5)",
+        glow: "0 0 0 1px hsl(var(--ring) / 0.4)",
       },
       borderRadius: {
         lg: "var(--radius)",
