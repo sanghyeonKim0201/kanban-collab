@@ -12,7 +12,7 @@ export function WorkPane({
   className?: string;
 }) {
   return (
-    <div className="flex h-screen min-w-0 flex-1">
+    <div className="flex h-full min-w-0 flex-1">
       {secondary && (
         <div className="hidden w-60 shrink-0 flex-col border-r border-border bg-surface/40 md:flex">
           {secondary}
