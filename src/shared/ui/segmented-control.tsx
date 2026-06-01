@@ -1,3 +1,4 @@
+"use client";
 import { cn } from "@/shared/lib/cn";
 
 export function SegmentedControl<T extends string>({
