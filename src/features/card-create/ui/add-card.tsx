@@ -40,7 +40,7 @@ export function AddCard({
       <Button
         variant="ghost"
         size="sm"
-        className="w-full justify-start text-muted-foreground"
+        className="w-full justify-start rounded-md text-muted-foreground hover:bg-surface-2 hover:text-foreground"
         onClick={() => setOpen(true)}
       >
         <Plus className="h-4 w-4" /> 카드 추가

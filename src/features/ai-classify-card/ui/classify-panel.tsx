@@ -8,6 +8,7 @@ import { updateCard } from "@/entities/card/api/actions";
 import type { Classification } from "@/shared/lib/parse-llm-json";
 import { Button } from "@/shared/ui/button";
 import { Badge } from "@/shared/ui/badge";
+import { StatusPill } from "@/shared/ui/status-pill";
 
 const AUTO_KEY = "ai-classify-auto-apply";
 
@@ -66,7 +67,7 @@ export function ClassifyPanel({
   }
 
   return (
-    <div className="rounded-md border border-dashed p-3 text-xs">
+    <div className="rounded-md border border-dashed border-border p-3 text-xs text-foreground">
       <div className="flex items-center justify-between">
         <p className="flex items-center gap-1.5 font-medium">
           <Sparkles className="h-3.5 w-3.5" /> AI 분류
@@ -83,14 +84,14 @@ export function ClassifyPanel({
 
       {currentCategory && !result && (
         <p className="mt-1 text-muted-foreground">
-          현재 추천 카테고리: <Badge variant="secondary">{currentCategory}</Badge>
+          현재 추천 카테고리: <StatusPill tone="primary">{currentCategory}</StatusPill>
         </p>
       )}
 
       {result ? (
         <div className="mt-2 space-y-2">
           <p>
-            추천: <Badge>{result.category}</Badge>{" "}
+            추천: <StatusPill tone="primary">{result.category}</StatusPill>{" "}
             <Badge variant="outline">{result.priority}</Badge>{" "}
             <span className="text-muted-foreground">
               confidence {Math.round(result.confidence * 100)}%

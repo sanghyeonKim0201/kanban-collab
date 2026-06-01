@@ -31,7 +31,7 @@ export function BoardColumn({
       </div>
       <div
         ref={setNodeRef}
-        className={`flex-1 space-y-2 px-2 pb-2 transition-shadow ${isOver ? "rounded-lg ring-2 ring-primary/40" : ""}`}
+        className={`min-h-0 flex-1 overflow-y-auto space-y-2 px-2 pb-2 transition-shadow ${isOver ? "rounded-lg ring-2 ring-primary/40" : ""}`}
       >
         <SortableContext
           items={column.cards.map((c) => c.id)}

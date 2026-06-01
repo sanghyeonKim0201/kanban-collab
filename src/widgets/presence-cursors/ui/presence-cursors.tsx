@@ -22,7 +22,7 @@ export function PresenceCursors({ peers }: { peers: Peer[] }) {
               style={{ color: p.color, fill: p.color }}
             />
             <span
-              className="rounded px-1 py-0.5 text-[10px] font-medium text-white"
+              className="rounded px-1 py-0.5 text-[10px] font-semibold text-white shadow-sm ring-1 ring-black/20"
               style={{ background: p.color }}
             >
               {p.name}
