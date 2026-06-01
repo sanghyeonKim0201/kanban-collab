@@ -10,6 +10,11 @@ import { publicEnv, serverEnv } from "@/shared/config/env";
 export function createAdminClient() {
   const pub = publicEnv();
   const srv = serverEnv();
+  if (!srv.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY 가 필요합니다 (GitHub Webhook 등 관리자 작업). .env.local 에 설정하세요.",
+    );
+  }
   return createSupabaseClient(
     pub.NEXT_PUBLIC_SUPABASE_URL,
     srv.SUPABASE_SERVICE_ROLE_KEY,

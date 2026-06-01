@@ -11,7 +11,9 @@ const publicSchema = z.object({
 });
 
 const serverSchema = z.object({
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  // 관리자(RLS 우회) 작업에만 필요 — GitHub Webhook 등. AI/회의 경로는 불필요하므로
+  // 선택값으로 두고, 실제 사용처(createAdminClient)에서 누락 시 명확히 에러를 던진다.
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional().default(""),
   GITHUB_WEBHOOK_SECRET: z.string().optional().default(""),
   LLM_PROVIDER: z.enum(["openai", "anthropic"]).optional().default("openai"),
   LLM_API_KEY: z.string().optional().default(""),
@@ -56,9 +58,7 @@ export function serverEnv() {
     STT_MODEL: process.env.STT_MODEL,
   });
   if (!parsed.success) {
-    throw new Error(
-      `[env] 서버 환경변수가 없습니다 (SUPABASE_SERVICE_ROLE_KEY 필수).\n${parsed.error.message}`,
-    );
+    throw new Error(`[env] 서버 환경변수 파싱 실패.\n${parsed.error.message}`);
   }
   serverCache = parsed.data;
   return serverCache;
