@@ -22,7 +22,7 @@ export function BoardColumn({
   });
 
   return (
-    <div className="flex w-[280px] shrink-0 flex-col rounded-xl border border-border bg-surface/60">
+    <div className="flex max-h-full w-[280px] shrink-0 flex-col rounded-xl border border-border bg-surface/60">
       <div className="flex items-center justify-between px-3 py-2.5">
         <h3 className="text-[13px] font-semibold text-foreground">{column.name}</h3>
         <span className="rounded-full bg-muted px-1.5 text-[11px] tabular-nums text-muted-foreground">
@@ -31,7 +31,7 @@ export function BoardColumn({
       </div>
       <div
         ref={setNodeRef}
-        className={`min-h-0 flex-1 overflow-y-auto space-y-2 px-2 pb-2 transition-shadow ${isOver ? "rounded-lg ring-2 ring-primary/40" : ""}`}
+        className={`min-h-[60px] space-y-2 overflow-y-auto px-2 pb-2 transition-shadow ${isOver ? "rounded-lg ring-2 ring-primary/40" : ""}`}
       >
         <SortableContext
           items={column.cards.map((c) => c.id)}

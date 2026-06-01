@@ -48,7 +48,7 @@ export function BoardView({ initial }: { initial: BoardWithColumns }) {
           collisionDetection={closestCorners}
           onDragEnd={onDragEnd}
         >
-          <div className="flex h-full gap-4 overflow-x-auto p-6">
+          <div className="flex h-full items-start gap-4 overflow-x-auto p-6">
             {columns.map((col) => (
               <BoardColumn key={col.id} column={col} boardId={initial.id} />
             ))}
