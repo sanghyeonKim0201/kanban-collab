@@ -18,16 +18,13 @@ export async function transcribeAudio(
 
   const form = new FormData();
   form.append("file", audio, filename);
-  form.append("model", "whisper-1");
+  form.append("model", env.STT_MODEL);
 
-  const res = await fetch(
-    "https://api.openai.com/v1/audio/transcriptions",
-    {
-      method: "POST",
-      headers: { authorization: `Bearer ${env.STT_API_KEY}` },
-      body: form,
-    },
-  );
+  const res = await fetch(`${env.STT_BASE_URL}/audio/transcriptions`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${env.STT_API_KEY}` },
+    body: form,
+  });
   if (!res.ok) throw new Error(`STT 실패: ${res.status}`);
   const json = (await res.json()) as { text?: string };
   return json.text ?? "";

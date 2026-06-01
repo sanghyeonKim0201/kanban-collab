@@ -74,7 +74,7 @@ async function callLLM(prompt: string, maxTokens: number): Promise<string> {
     return json.content?.[0]?.text ?? "";
   }
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetch(`${env.LLM_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
       "content-type": "application/json",

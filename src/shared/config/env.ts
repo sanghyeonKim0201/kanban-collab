@@ -16,7 +16,11 @@ const serverSchema = z.object({
   LLM_PROVIDER: z.enum(["openai", "anthropic"]).optional().default("openai"),
   LLM_API_KEY: z.string().optional().default(""),
   LLM_MODEL: z.string().optional().default("gpt-4o-mini"),
+  // OpenAI 호환 엔드포인트면 base URL 만 바꿔 로컬(Ollama)·Groq·Gemini 로 스왑 가능.
+  LLM_BASE_URL: z.string().url().optional().default("https://api.openai.com/v1"),
   STT_API_KEY: z.string().optional().default(""),
+  STT_BASE_URL: z.string().url().optional().default("https://api.openai.com/v1"),
+  STT_MODEL: z.string().optional().default("whisper-1"),
 });
 
 let publicCache: z.infer<typeof publicSchema> | null = null;
@@ -46,7 +50,10 @@ export function serverEnv() {
     LLM_PROVIDER: process.env.LLM_PROVIDER,
     LLM_API_KEY: process.env.LLM_API_KEY,
     LLM_MODEL: process.env.LLM_MODEL,
+    LLM_BASE_URL: process.env.LLM_BASE_URL,
     STT_API_KEY: process.env.STT_API_KEY,
+    STT_BASE_URL: process.env.STT_BASE_URL,
+    STT_MODEL: process.env.STT_MODEL,
   });
   if (!parsed.success) {
     throw new Error(
