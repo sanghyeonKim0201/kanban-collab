@@ -73,6 +73,39 @@ export async function getWorkspace(id: string): Promise<Workspace | null> {
   return data;
 }
 
+export interface BoardWithCardCount extends Board {
+  cardCount: number;
+}
+
+/** 워크스페이스 보드 목록 + 보드별 카드 수 (목록 카드용 집계). */
+export async function listBoardsWithCounts(
+  workspaceId: string,
+): Promise<BoardWithCardCount[]> {
+  const boards = await listBoards(workspaceId);
+  if (boards.length === 0) return [];
+  const supabase = createClient();
+
+  return Promise.all(
+    boards.map(async (b) => {
+      // 카드는 컬럼을 통해 보드에 속함 — 해당 보드 컬럼들의 카드 수 합.
+      const { data: cols } = await supabase
+        .from("columns")
+        .select("id")
+        .eq("board_id", b.id);
+      const columnIds = (cols ?? []).map((c: { id: string }) => c.id);
+      let cardCount = 0;
+      if (columnIds.length) {
+        const { count } = await supabase
+          .from("cards")
+          .select("id", { count: "exact", head: true })
+          .in("column_id", columnIds);
+        cardCount = count ?? 0;
+      }
+      return { ...b, cardCount };
+    }),
+  );
+}
+
 export async function listBoards(workspaceId: string): Promise<Board[]> {
   const supabase = createClient();
   const { data, error } = await supabase

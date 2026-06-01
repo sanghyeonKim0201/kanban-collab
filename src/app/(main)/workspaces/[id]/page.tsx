@@ -1,18 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid, Layers } from "lucide-react";
 import {
   getWorkspace,
-  listBoards,
+  listBoardsWithCounts,
   listMembers,
 } from "@/entities/workspace/api/queries";
 import { CreateBoardDialog } from "@/features/board-create/ui/create-board-dialog";
-import { Card, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Card } from "@/shared/ui/card";
 import { StatusPill } from "@/shared/ui/status-pill";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { Avatar, AvatarFallback } from "@/shared/ui/avatar";
 
 export const dynamic = "force-dynamic";
+
+const CARD_GRID = "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
 
 export default async function WorkspaceHome({
   params,
@@ -23,7 +25,7 @@ export default async function WorkspaceHome({
   if (!ws) notFound();
 
   const [boards, members] = await Promise.all([
-    listBoards(params.id),
+    listBoardsWithCounts(params.id),
     listMembers(params.id),
   ]);
 
@@ -43,16 +45,20 @@ export default async function WorkspaceHome({
             description="새 보드를 만들면 To Do · In Progress · Done 컬럼이 자동 생성됩니다."
           />
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className={CARD_GRID}>
             {boards.map((b) => (
               <Link key={b.id} href={`/board/${b.id}`}>
-                <Card className="transition-all hover:-translate-y-px hover:border-border-strong">
-                  <CardHeader className="flex-row items-center gap-2 space-y-0">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-md bg-surface-2 text-muted-foreground">
-                      <LayoutGrid className="h-4 w-4" />
-                    </span>
-                    <CardTitle className="text-[15px]">{b.name}</CardTitle>
-                  </CardHeader>
+                <Card className="h-full p-4 transition-all hover:-translate-y-px hover:border-border-strong">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-muted-foreground">
+                    <LayoutGrid className="h-4 w-4" />
+                  </span>
+                  <h3 className="mt-3 truncate text-[15px] font-semibold text-foreground">
+                    {b.name}
+                  </h3>
+                  <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+                    <Layers className="h-3.5 w-3.5" />
+                    카드 {b.cardCount}
+                  </p>
                 </Card>
               </Link>
             ))}
@@ -64,25 +70,26 @@ export default async function WorkspaceHome({
         <h2 className="mb-3 text-[15px] font-semibold text-foreground">
           멤버 ({members.length})
         </h2>
-        <div className="max-w-2xl space-y-2">
-          {members.map((m) => (
-            <div
-              key={m.user.id}
-              className="flex items-center gap-3 rounded-lg border border-border bg-surface p-2.5"
-            >
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-xs">
-                  {(m.user.display_name ?? m.user.email ?? "?")
-                    .charAt(0)
-                    .toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <span className="flex-1 text-[13px] text-foreground">
-                {m.user.display_name ?? m.user.email}
-              </span>
-              <StatusPill tone="neutral">{m.role}</StatusPill>
-            </div>
-          ))}
+        <div className={CARD_GRID}>
+          {members.map((m) => {
+            const label = m.user.display_name ?? m.user.email ?? "?";
+            return (
+              <div
+                key={m.user.id}
+                className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3"
+              >
+                <Avatar className="h-9 w-9 shrink-0">
+                  <AvatarFallback className="text-xs">
+                    {label.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="flex-1 truncate text-[13px] text-foreground">
+                  {label}
+                </span>
+                <StatusPill tone="neutral">{m.role}</StatusPill>
+              </div>
+            );
+          })}
         </div>
       </section>
     </div>
