@@ -24,6 +24,7 @@ export const SlideOverContent = React.forwardRef<
       {children}
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-md p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground">
         <X className="h-4 w-4" />
+        <span className="sr-only">닫기</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPrimitive.Portal>
