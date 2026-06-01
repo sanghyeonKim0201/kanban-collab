@@ -4,14 +4,15 @@ import Link from "next/link";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/shared/lib/cn";
-import { Badge } from "@/shared/ui/badge";
+import { StatusPill } from "@/shared/ui/status-pill";
 import { Avatar, AvatarFallback } from "@/shared/ui/avatar";
 import type { CardWithRelations } from "@/shared/types/database";
 
-const priorityVariant = {
-  low: "secondary",
-  medium: "outline",
-  high: "destructive",
+const priorityTone = { low: "neutral", medium: "warning", high: "danger" } as const;
+const priorityBar = {
+  low: "bg-muted-foreground/40",
+  medium: "bg-warning",
+  high: "bg-destructive",
 } as const;
 
 export function CardItem({
@@ -29,12 +30,15 @@ export function CardItem({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "rounded-md border bg-card p-3 shadow-sm",
-        isDragging && "opacity-50",
+        "group relative overflow-hidden rounded-lg border border-border bg-surface-2 p-3 transition-all hover:-translate-y-px hover:border-border-strong hover:shadow-card",
+        isDragging && "opacity-50 shadow-elevated",
       )}
       {...attributes}
       {...listeners}
     >
+      <span
+        className={cn("absolute inset-y-0 left-0 w-0.5", priorityBar[card.priority])}
+      />
       <Link
         href={`/board/${boardId}/card/${card.id}`}
         className="block space-y-2"
@@ -42,15 +46,13 @@ export function CardItem({
           if (isDragging) e.preventDefault();
         }}
       >
-        <p className="text-sm font-medium leading-snug">{card.title}</p>
+        <p className="text-[13px] font-medium leading-snug text-foreground">
+          {card.title}
+        </p>
         <div className="flex flex-wrap items-center gap-1.5">
-          <Badge variant={priorityVariant[card.priority]} className="text-[10px]">
-            {card.priority}
-          </Badge>
+          <StatusPill tone={priorityTone[card.priority]}>{card.priority}</StatusPill>
           {card.ai_category && (
-            <Badge variant="secondary" className="text-[10px]">
-              AI: {card.ai_category}
-            </Badge>
+            <StatusPill tone="primary">AI: {card.ai_category}</StatusPill>
           )}
           {card.labels.map((l) => (
             <span

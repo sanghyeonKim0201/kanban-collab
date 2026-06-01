@@ -22,18 +22,16 @@ export function BoardColumn({
   });
 
   return (
-    <div className="flex w-72 shrink-0 flex-col rounded-lg bg-muted/40">
+    <div className="flex w-[280px] shrink-0 flex-col rounded-xl border border-border bg-surface/60">
       <div className="flex items-center justify-between px-3 py-2.5">
-        <h3 className="text-sm font-semibold">{column.name}</h3>
-        <span className="text-xs text-muted-foreground">
+        <h3 className="text-[13px] font-semibold text-foreground">{column.name}</h3>
+        <span className="rounded-full bg-muted px-1.5 text-[11px] tabular-nums text-muted-foreground">
           {column.cards.length}
         </span>
       </div>
       <div
         ref={setNodeRef}
-        className={`flex-1 space-y-2 px-2 pb-2 transition-colors ${
-          isOver ? "bg-accent/40" : ""
-        }`}
+        className={`flex-1 space-y-2 px-2 pb-2 transition-shadow ${isOver ? "rounded-lg ring-2 ring-primary/40" : ""}`}
       >
         <SortableContext
           items={column.cards.map((c) => c.id)}
