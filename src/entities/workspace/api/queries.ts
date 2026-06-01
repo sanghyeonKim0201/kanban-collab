@@ -29,6 +29,40 @@ export async function listMyWorkspaces(): Promise<WorkspaceListItem[]> {
     });
 }
 
+export interface WorkspaceListItemWithCounts extends WorkspaceListItem {
+  boardCount: number;
+  memberCount: number;
+}
+
+/** 목록 카드용: 워크스페이스 + 보드/멤버 수 (읽기 전용 집계). */
+export async function listMyWorkspacesWithCounts(): Promise<
+  WorkspaceListItemWithCounts[]
+> {
+  const workspaces = await listMyWorkspaces();
+  if (workspaces.length === 0) return [];
+  const supabase = createClient();
+
+  return Promise.all(
+    workspaces.map(async (ws) => {
+      const [{ count: boardCount }, { count: memberCount }] = await Promise.all([
+        supabase
+          .from("boards")
+          .select("id", { count: "exact", head: true })
+          .eq("workspace_id", ws.id),
+        supabase
+          .from("workspace_members")
+          .select("id", { count: "exact", head: true })
+          .eq("workspace_id", ws.id),
+      ]);
+      return {
+        ...ws,
+        boardCount: boardCount ?? 0,
+        memberCount: memberCount ?? 0,
+      };
+    }),
+  );
+}
+
 export async function getWorkspace(id: string): Promise<Workspace | null> {
   const supabase = createClient();
   const { data } = await supabase

@@ -28,7 +28,7 @@ export default async function WorkspaceHome({
   ]);
 
   return (
-    <div className="mx-auto max-w-5xl p-8">
+    <div className="w-full px-8 py-8">
       <h1 className="mb-6 text-xl font-semibold text-foreground">{ws.name}</h1>
 
       <section className="mb-10">
@@ -43,7 +43,7 @@ export default async function WorkspaceHome({
             description="새 보드를 만들면 To Do · In Progress · Done 컬럼이 자동 생성됩니다."
           />
         ) : (
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {boards.map((b) => (
               <Link key={b.id} href={`/board/${b.id}`}>
                 <Card className="transition-all hover:-translate-y-px hover:border-border-strong">
@@ -64,7 +64,7 @@ export default async function WorkspaceHome({
         <h2 className="mb-3 text-[15px] font-semibold text-foreground">
           멤버 ({members.length})
         </h2>
-        <div className="space-y-2">
+        <div className="max-w-2xl space-y-2">
           {members.map((m) => (
             <div
               key={m.user.id}
