@@ -190,3 +190,20 @@ function prBadgeState(action: string, merged: boolean): 'open'|'merged'|'closed'
 - Supabase realtime publication에 `board_activity` 추가 필요(적용 시).
 - 보드별 매핑 UI의 정확한 host(컨텍스트 패널 설정 affordance vs 모달)는 구현 계획에서 확정.
 - PR 번호 추출(`pull_request.number`)을 토스트 메시지에 포함.
+
+## 11. 알려진 한계 (v1 데모 범위 밖 — 후속 견고화)
+
+적대적 리뷰(2026-06-02)에서 Critical 없음, Important 2건 확인. 둘 다 트리거 조건이
+통제된 라이브 시연에선 발생하지 않아 v1 에서는 수용하고 후속 과제로 분리한다.
+
+- **웹훅 delivery 멱등 키 부재:** GitHub 재전송(또는 UI Redeliver) 시 활동 로그가
+  중복되고, 사용자가 수동으로 옮긴 카드를 자동화가 되돌릴 수 있다. 해결: `github_events`
+  에 `X-GitHub-Delivery` id 를 unique 로 저장하고 기처리 delivery 는 early-return.
+- **동시 append position 충돌:** 두 PR 웹훅이 거의 동시에 같은 타깃 컬럼 끝에 append 하면
+  동일 `lastPos` 를 읽어 같은 position 을 계산 → 두 카드 동일 position → 이후 그 사이 드롭이
+  `lexorank.between(a≥b)` 에러로 실패. 해결: 이동을 DB RPC(advisory lock/FOR UPDATE)로
+  원자화하거나 충돌 시 재시도.
+- (Minor) `cards.update` 성공 후 `board_activity.insert` 실패 시 부분 실패. 단일 RPC 트랜잭션
+  또는 활동 로그 실패의 비치명 처리로 보완 가능.
+- (Minor) `boards.github_repo` 에 unique 제약 없음 — 같은 레포를 두 보드가 연결하면
+  `maybeSingle()` 이 비결정적/skip. unique 제약 또는 다중 보드 루프로 보완.
