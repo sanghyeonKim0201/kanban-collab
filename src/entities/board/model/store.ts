@@ -17,6 +17,16 @@ interface BoardState {
     toColumnId: string,
     toIndex: number,
   ) => ColumnWithCards[];
+  /** 낙관적 컬럼 이름 변경. 롤백을 위해 이전 스냅샷을 반환. */
+  renameColumnLocal: (id: string, name: string) => ColumnWithCards[];
+  /** 낙관적 컬럼 삭제. 롤백을 위해 이전 스냅샷을 반환. */
+  removeColumnLocal: (id: string) => ColumnWithCards[];
+  /** 낙관적 컬럼 순서 변경. 롤백을 위해 이전 스냅샷을 반환. */
+  reorderColumnLocal: (
+    id: string,
+    toIndex: number,
+    position: string,
+  ) => ColumnWithCards[];
   restore: (snapshot: ColumnWithCards[]) => void;
   upsertCard: (card: CardWithRelations) => void;
   removeCard: (cardId: string) => void;
@@ -54,6 +64,36 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const clamped = Math.max(0, Math.min(toIndex, target.cards.length));
     target.cards.splice(clamped, 0, moved);
 
+    set({ columns: next });
+    return snapshot;
+  },
+
+  renameColumnLocal: (id, name) => {
+    const snapshot = clone(get().columns);
+    set({
+      columns: get().columns.map((c) =>
+        c.id === id ? { ...c, name } : c,
+      ),
+    });
+    return snapshot;
+  },
+
+  removeColumnLocal: (id) => {
+    const snapshot = clone(get().columns);
+    set({ columns: get().columns.filter((c) => c.id !== id) });
+    return snapshot;
+  },
+
+  reorderColumnLocal: (id, toIndex, position) => {
+    const snapshot = clone(get().columns);
+    const next = clone(get().columns);
+    const from = next.findIndex((c) => c.id === id);
+    if (from === -1) return snapshot;
+    const [moved] = next.splice(from, 1);
+    if (!moved) return snapshot;
+    moved.position = position;
+    const clamped = Math.max(0, Math.min(toIndex, next.length));
+    next.splice(clamped, 0, moved);
     set({ columns: next });
     return snapshot;
   },
