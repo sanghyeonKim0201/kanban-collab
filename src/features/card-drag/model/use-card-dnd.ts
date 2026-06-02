@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { moveCard } from "@/entities/card/api/actions";
+import { reorderColumn } from "@/entities/column/api/actions";
 import { useBoardStore } from "@/entities/board/model/store";
 
 /**
@@ -16,6 +17,40 @@ export function useCardDnd(boardId: string) {
   async function onDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over) return;
+
+    // 컬럼 재정렬 분기 (active 가 컬럼 핸들일 때)
+    if (active.data.current?.type === "column-sort") {
+      const cols = useBoardStore.getState().columns;
+      const activeColId = String(active.data.current.columnId);
+      const overColId = String(over.data.current?.columnId ?? "");
+      if (!overColId || activeColId === overColId) return;
+
+      const fromIdx = cols.findIndex((c) => c.id === activeColId);
+      const toIdx = cols.findIndex((c) => c.id === overColId);
+      if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+
+      // active 를 뺀 순서에서 toIdx 자리에 끼울 때의 양옆 컬럼 position.
+      const without = cols.filter((c) => c.id !== activeColId);
+      const before = toIdx > 0 ? (without[toIdx - 1]?.position ?? null) : null;
+      const after = without[toIdx]?.position ?? null;
+
+      // 낙관 이동: 순서만 즉시 반영(임시 position). 정확 position 은 서버 between + resync 가 정정.
+      const snapshot = useBoardStore
+        .getState()
+        .reorderColumnLocal(activeColId, toIdx, after ?? before ?? "");
+      try {
+        await reorderColumn({
+          id: activeColId,
+          beforePosition: before,
+          afterPosition: after,
+          boardId,
+        });
+      } catch (e) {
+        useBoardStore.getState().restore(snapshot);
+        toast.error(e instanceof Error ? e.message : "컬럼 이동 실패");
+      }
+      return;
+    }
 
     const columns = useBoardStore.getState().columns;
     const activeId = String(active.id);
