@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import {
@@ -29,11 +29,6 @@ export function ColumnHeader({
   const { rename, remove } = useColumnActions(boardId);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
-
-  // name prop이 외부(낙관적 업데이트 등)에서 변경될 때 비편집 상태에서만 동기화
-  useEffect(() => {
-    if (!editing) setDraft(name);
-  }, [name, editing]);
 
   function commit() {
     const value = draft.trim();
