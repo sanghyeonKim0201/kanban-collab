@@ -22,7 +22,25 @@ export function useCardDnd(boardId: string) {
     if (active.data.current?.type === "column-sort") {
       const cols = useBoardStore.getState().columns;
       const activeColId = String(active.data.current.columnId);
-      const overColId = String(over.data.current?.columnId ?? "");
+
+      // over 는 컬럼 sortable(colsort-id) / 컬럼 droppable(columnId) / 카드 중 하나.
+      // 모두 실제 컬럼 id 로 해석한다.
+      const overId = String(over.id);
+      let overColId = "";
+      if (
+        over.data.current?.type === "column-sort" ||
+        over.data.current?.type === "column"
+      ) {
+        overColId = String(over.data.current.columnId ?? "");
+      } else if (overId.startsWith("colsort-")) {
+        overColId = overId.slice("colsort-".length);
+      } else if (cols.some((c) => c.id === overId)) {
+        overColId = overId;
+      } else {
+        // 카드 위에 드롭된 경우 → 그 카드가 속한 컬럼
+        overColId =
+          cols.find((c) => c.cards.some((cd) => cd.id === overId))?.id ?? "";
+      }
       if (!overColId || activeColId === overColId) return;
 
       const fromIdx = cols.findIndex((c) => c.id === activeColId);
