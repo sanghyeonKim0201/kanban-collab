@@ -81,6 +81,7 @@ export async function getBoardWithColumnsAndCards(
       due_date: card.due_date,
       ai_category: card.ai_category,
       github_url: card.github_url,
+      github_pr_state: card.github_pr_state,
       created_by: card.created_by,
       created_at: card.created_at,
       updated_at: card.updated_at,

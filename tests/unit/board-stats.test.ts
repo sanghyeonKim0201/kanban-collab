@@ -8,6 +8,7 @@ function col(name: string, n: number): ColumnWithCards {
     cards: Array.from({ length: n }, (_, i) => ({
       id: `${name}-${i}`, column_id: name, title: "t", description: null, position: "",
       priority: "low", due_date: null, ai_category: null, github_url: null,
+      github_pr_state: null,
       created_by: null, created_at: "", updated_at: "", assignees: [], labels: [],
     })),
   };

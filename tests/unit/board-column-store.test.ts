@@ -8,6 +8,7 @@ function col(id: string, name: string, position: string): ColumnWithCards {
 function board(cols: ColumnWithCards[]): BoardWithColumns {
   return {
     id: "b", workspace_id: "w", name: "B", github_repo: null,
+    pr_automation_enabled: false, pr_open_column_id: null, pr_merged_column_id: null,
     created_at: "", columns: cols,
   };
 }

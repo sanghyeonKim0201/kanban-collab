@@ -63,6 +63,7 @@ export async function getCardDetail(
       due_date: c.due_date,
       ai_category: c.ai_category,
       github_url: c.github_url,
+      github_pr_state: c.github_pr_state,
       created_by: c.created_by,
       created_at: c.created_at,
       updated_at: c.updated_at,

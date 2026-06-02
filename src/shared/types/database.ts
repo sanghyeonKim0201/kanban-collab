@@ -26,6 +26,9 @@ export interface Board {
   workspace_id: string;
   name: string;
   github_repo: string | null;
+  pr_automation_enabled: boolean;
+  pr_open_column_id: string | null;
+  pr_merged_column_id: string | null;
   created_at: string;
 }
 
@@ -47,6 +50,7 @@ export interface Card {
   due_date: string | null;
   ai_category: string | null;
   github_url: string | null;
+  github_pr_state: "open" | "merged" | "closed" | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -104,6 +108,15 @@ export interface GithubEvent {
   event_type: string;
   payload: Record<string, unknown>;
   processed_at: string | null;
+  created_at: string;
+}
+
+export interface BoardActivity {
+  id: string;
+  board_id: string;
+  card_id: string | null;
+  kind: string;
+  message: string;
   created_at: string;
 }
 
