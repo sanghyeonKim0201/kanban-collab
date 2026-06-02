@@ -45,7 +45,7 @@ export function AddColumn({
         placeholder="컬럼 이름"
         onChange={(e) => setName(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") submit();
+          if (e.key === "Enter" && !pending) submit();
           if (e.key === "Escape") setOpen(false);
         }}
       />

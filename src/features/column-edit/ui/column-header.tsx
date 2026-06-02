@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import {
@@ -24,11 +24,16 @@ export function ColumnHeader({
   count: number;
   boardId: string;
   canEdit: boolean;
-  dragHandle?: React.ReactNode;
+  dragHandle?: ReactNode;
 }) {
   const { rename, remove } = useColumnActions(boardId);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
+
+  // name prop이 외부(낙관적 업데이트 등)에서 변경될 때 비편집 상태에서만 동기화
+  useEffect(() => {
+    if (!editing) setDraft(name);
+  }, [name, editing]);
 
   function commit() {
     const value = draft.trim();
@@ -62,7 +67,7 @@ export function ColumnHeader({
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => {
-            if (e.key === "Enter") commit();
+            if (e.key === "Enter") { e.preventDefault(); commit(); }
             if (e.key === "Escape") {
               setDraft(name);
               setEditing(false);
@@ -103,7 +108,7 @@ export function ColumnHeader({
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={count > 0}
-            onClick={() => count === 0 && remove(columnId)}
+            onClick={() => remove(columnId)}
             className={cn(count === 0 && "text-destructive focus:text-destructive")}
           >
             {count > 0 ? "삭제 (카드 비우기 먼저)" : "삭제"}
