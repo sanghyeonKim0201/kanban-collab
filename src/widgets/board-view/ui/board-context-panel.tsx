@@ -3,16 +3,21 @@ import { useBoardStore } from "@/entities/board/model/store";
 import { computeBoardProgress, statusCounts } from "@/entities/board/model/stats";
 import { ProgressBar } from "@/shared/ui/progress-bar";
 import { PrAutomationSettings } from "@/features/pr-automation/ui/pr-automation-settings";
+import { useBoardActivity } from "@/features/pr-automation/model/use-board-activity";
+import type { BoardActivity } from "@/shared/types/database";
 
 export function BoardContextPanel({
   boardId,
   canEdit,
   prAutomation,
+  initialActivity,
 }: {
   boardId: string;
   canEdit: boolean;
   prAutomation: { enabled: boolean; openColumnId: string | null; mergedColumnId: string | null };
+  initialActivity: BoardActivity[];
 }) {
+  const activity = useBoardActivity(boardId, initialActivity);
   const columns = useBoardStore((s) => s.columns);
   const progress = computeBoardProgress(columns);
   const counts = statusCounts(columns);
@@ -74,6 +79,21 @@ export function BoardContextPanel({
           mergedColumnId: prAutomation.mergedColumnId,
         }}
       />
+
+      {activity.length > 0 && (
+        <div>
+          <div className="mb-1.5 px-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            자동화 활동
+          </div>
+          <div className="space-y-1">
+            {activity.map((a) => (
+              <div key={a.id} className="rounded-md px-2 py-1.5 text-[12px] text-muted-foreground">
+                {a.message}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -17,7 +17,7 @@ import {
 import { useBoardStore } from "@/entities/board/model/store";
 import { useBoardRealtime } from "@/entities/board/model/use-board-realtime";
 import { useCardDnd } from "@/features/card-drag/model/use-card-dnd";
-import type { BoardWithColumns } from "@/shared/types/database";
+import type { BoardWithColumns, BoardActivity } from "@/shared/types/database";
 import { WorkPane } from "@/widgets/app-shell/ui/work-pane";
 import { AddColumn } from "@/features/column-edit/ui/add-column";
 import { BoardColumn } from "./board-column";
@@ -28,9 +28,11 @@ import { BoardListView } from "./board-list-view";
 export function BoardView({
   initial,
   canEdit,
+  initialActivity,
 }: {
   initial: BoardWithColumns;
   canEdit: boolean;
+  initialActivity: BoardActivity[];
 }) {
   const setBoard = useBoardStore((s) => s.setBoard);
   const columns = useBoardStore((s) => s.columns);
@@ -59,6 +61,7 @@ export function BoardView({
             openColumnId: initial.pr_open_column_id,
             mergedColumnId: initial.pr_merged_column_id,
           }}
+          initialActivity={initialActivity}
         />
       }
       toolbar={<BoardToolbar name={initial.name} mode={mode} onMode={setMode} />}

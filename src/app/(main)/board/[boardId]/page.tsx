@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getBoardWithColumnsAndCards } from "@/entities/board/api/queries";
 import { getCurrentUser } from "@/entities/user/api/current-user";
 import { getMyBoardRole } from "@/entities/board/api/role";
+import { listBoardActivity } from "@/entities/board/api/activity";
 import { BoardView } from "@/widgets/board-view/ui/board-view";
 import { CollaborationLayer } from "@/processes/realtime-collaboration/ui/collaboration-layer";
 
@@ -12,10 +13,11 @@ export default async function BoardPage({
 }: {
   params: { boardId: string };
 }) {
-  const [board, user, role] = await Promise.all([
+  const [board, user, role, activity] = await Promise.all([
     getBoardWithColumnsAndCards(params.boardId),
     getCurrentUser(),
     getMyBoardRole(params.boardId),
+    listBoardActivity(params.boardId),
   ]);
   if (!board) notFound();
 
@@ -23,7 +25,7 @@ export default async function BoardPage({
 
   return (
     <>
-      <BoardView initial={board} canEdit={canEdit} />
+      <BoardView initial={board} canEdit={canEdit} initialActivity={activity} />
       {user && (
         <CollaborationLayer
           boardId={board.id}
