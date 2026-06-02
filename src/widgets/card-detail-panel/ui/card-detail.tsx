@@ -29,6 +29,7 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
   const [description, setDescription] = useState(card.description ?? "");
   const [priority, setPriority] = useState<Priority>(card.priority);
   const [comment, setComment] = useState("");
+  const [tab, setTab] = useState("overview");
   const [pending, start] = useTransition();
   const assignedIds = new Set(assignees.map((a) => a.id));
 
@@ -81,15 +82,23 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
     });
   }
 
+  const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+    <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+      {children}
+    </p>
+  );
+
   return (
     <div className="space-y-4">
-      <Input
+      <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="h-auto border-0 bg-transparent px-0 pr-8 text-base font-semibold focus-visible:ring-0"
+        aria-label="카드 제목"
+        placeholder="카드 제목"
+        className="w-full rounded-md border border-border bg-surface px-2.5 py-1.5 text-base font-semibold text-foreground transition-colors hover:border-border-strong focus:border-primary/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
       />
 
-      <Tabs defaultValue="overview">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="overview">개요</TabsTrigger>
           <TabsTrigger value="activity">활동 ({comments.length})</TabsTrigger>
@@ -97,7 +106,7 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
 
         <TabsContent value="overview" className="space-y-5 pt-4">
           <div>
-            <p className="mb-1 text-xs font-medium text-muted-foreground">설명</p>
+            <SectionLabel>설명</SectionLabel>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -106,8 +115,8 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
             />
           </div>
 
-          <div>
-            <p className="mb-1 text-xs font-medium text-muted-foreground">우선순위</p>
+          <div className="border-t border-border pt-4">
+            <SectionLabel>우선순위</SectionLabel>
             <div className="flex gap-2">
               {PRIORITIES.map((p) => (
                 <Button
@@ -122,8 +131,8 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
             </div>
           </div>
 
-          <div>
-            <p className="mb-1 text-xs font-medium text-muted-foreground">담당자</p>
+          <div className="border-t border-border pt-4">
+            <SectionLabel>담당자</SectionLabel>
             <div className="flex flex-wrap gap-2">
               {members.map((m) => {
                 const active = assignedIds.has(m.user.id);
@@ -154,46 +163,63 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
             </div>
           </div>
 
-          <ClassifyPanel
-            cardId={card.id}
-            boardId={boardId}
-            currentCategory={card.ai_category}
-          />
+          <div className="border-t border-border pt-4">
+            <ClassifyPanel
+              cardId={card.id}
+              boardId={boardId}
+              currentCategory={card.ai_category}
+            />
+          </div>
 
           <div className="rounded-lg border border-border bg-surface p-3 text-xs text-muted-foreground">
             <p className="flex items-center gap-1.5 font-medium text-foreground">
               <Github className="h-3.5 w-3.5" /> GitHub
             </p>
-            <p className="mt-1">
-              {card.github_url
-                ? card.github_url
-                : "보드 설정에서 저장소 연결 시 PR/Issue 자동 링크 (M3)"}
+            <p className="mt-1 break-all">
+              {card.github_url ? (
+                <a
+                  href={card.github_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  {card.github_url}
+                </a>
+              ) : (
+                "보드 설정에서 저장소 연결 시 PR/Issue 자동 링크 (M3)"
+              )}
             </p>
           </div>
 
-          <Button onClick={save} disabled={pending} className="w-full">
-            {pending ? "저장 중…" : "저장"}
-          </Button>
+          {/* 스크롤 영역 하단 고정 저장 바 */}
+          <div className="sticky bottom-0 -mx-5 -mb-5 border-t border-border bg-surface px-5 py-3">
+            <Button onClick={save} disabled={pending} className="w-full">
+              {pending ? "저장 중…" : "저장"}
+            </Button>
+          </div>
         </TabsContent>
 
         <TabsContent value="activity" className="space-y-3 pt-4">
-          <div className="space-y-2">
-            {comments.length === 0 && (
-              <p className="text-xs text-muted-foreground">아직 댓글이 없습니다.</p>
-            )}
-            {comments.map((c) => (
-              <div
-                key={c.id}
-                className="rounded-lg border border-border bg-surface p-2.5 text-[13px]"
-              >
-                <p className="mb-0.5 text-xs text-muted-foreground">
-                  {c.author?.display_name ?? c.author?.email ?? "익명"}
-                </p>
-                {c.content}
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-2">
+          {comments.length === 0 ? (
+            <p className="py-8 text-center text-xs text-muted-foreground">
+              아직 댓글이 없습니다. 첫 댓글을 남겨보세요.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {comments.map((c) => (
+                <div
+                  key={c.id}
+                  className="rounded-lg border border-border bg-surface p-2.5 text-[13px]"
+                >
+                  <p className="mb-0.5 text-xs text-muted-foreground">
+                    {c.author?.display_name ?? c.author?.email ?? "익명"}
+                  </p>
+                  {c.content}
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="sticky bottom-0 -mx-5 -mb-5 flex gap-2 border-t border-border bg-surface px-5 py-3">
             <Input
               value={comment}
               onChange={(e) => setComment(e.target.value)}
