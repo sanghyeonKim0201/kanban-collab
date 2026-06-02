@@ -6,6 +6,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/shared/lib/cn";
 import { StatusPill } from "@/shared/ui/status-pill";
 import { Avatar, AvatarFallback } from "@/shared/ui/avatar";
+import { PrStatusBadge } from "@/features/pr-automation/ui/pr-status-badge";
 import type { CardWithRelations } from "@/shared/types/database";
 
 const priorityTone = { low: "neutral", medium: "warning", high: "danger" } as const;
@@ -54,6 +55,7 @@ export function CardItem({
           {card.ai_category && (
             <StatusPill tone="primary">AI: {card.ai_category}</StatusPill>
           )}
+          <PrStatusBadge state={card.github_pr_state} />
           {card.labels.map((l) => (
             <span
               key={l.id}

@@ -19,6 +19,8 @@ import { Textarea } from "@/shared/ui/textarea";
 import { Avatar, AvatarFallback } from "@/shared/ui/avatar";
 import { cn } from "@/shared/lib/cn";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/shared/ui/tabs";
+import { PrStatusBadge } from "@/features/pr-automation/ui/pr-status-badge";
+import { CardGithubUrlInput } from "@/features/pr-automation/ui/card-github-url-input";
 
 const PRIORITIES: Priority[] = ["low", "medium", "high"];
 
@@ -171,11 +173,12 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
             />
           </div>
 
-          <div className="rounded-lg border border-border bg-surface p-3 text-xs text-muted-foreground">
+          <div className="space-y-2 rounded-lg border border-border bg-surface p-3 text-xs text-muted-foreground">
             <p className="flex items-center gap-1.5 font-medium text-foreground">
               <Github className="h-3.5 w-3.5" /> GitHub
+              <PrStatusBadge state={card.github_pr_state} />
             </p>
-            <p className="mt-1 break-all">
+            <p className="break-all">
               {card.github_url ? (
                 <a
                   href={card.github_url}
@@ -189,6 +192,11 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
                 "보드 설정에서 저장소 연결 시 PR/Issue 자동 링크 (M3)"
               )}
             </p>
+            <CardGithubUrlInput
+              cardId={card.id}
+              boardId={boardId}
+              initialUrl={card.github_url}
+            />
           </div>
 
           {/* 스크롤 영역 하단 고정 저장 바 */}
