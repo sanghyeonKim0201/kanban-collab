@@ -50,7 +50,17 @@ export function BoardView({
 
   return (
     <WorkPane
-      secondary={<BoardContextPanel />}
+      secondary={
+        <BoardContextPanel
+          boardId={initial.id}
+          canEdit={canEdit}
+          prAutomation={{
+            enabled: initial.pr_automation_enabled,
+            openColumnId: initial.pr_open_column_id,
+            mergedColumnId: initial.pr_merged_column_id,
+          }}
+        />
+      }
       toolbar={<BoardToolbar name={initial.name} mode={mode} onMode={setMode} />}
     >
       {mode === "board" ? (

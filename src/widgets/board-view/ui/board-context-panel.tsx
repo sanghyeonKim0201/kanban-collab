@@ -2,8 +2,17 @@
 import { useBoardStore } from "@/entities/board/model/store";
 import { computeBoardProgress, statusCounts } from "@/entities/board/model/stats";
 import { ProgressBar } from "@/shared/ui/progress-bar";
+import { PrAutomationSettings } from "@/features/pr-automation/ui/pr-automation-settings";
 
-export function BoardContextPanel() {
+export function BoardContextPanel({
+  boardId,
+  canEdit,
+  prAutomation,
+}: {
+  boardId: string;
+  canEdit: boolean;
+  prAutomation: { enabled: boolean; openColumnId: string | null; mergedColumnId: string | null };
+}) {
   const columns = useBoardStore((s) => s.columns);
   const progress = computeBoardProgress(columns);
   const counts = statusCounts(columns);
@@ -54,6 +63,17 @@ export function BoardContextPanel() {
           ))}
         </div>
       </div>
+
+      <PrAutomationSettings
+        boardId={boardId}
+        canEdit={canEdit}
+        columns={columns.map((c) => ({ id: c.id, name: c.name }))}
+        initial={{
+          enabled: prAutomation.enabled,
+          openColumnId: prAutomation.openColumnId,
+          mergedColumnId: prAutomation.mergedColumnId,
+        }}
+      />
     </div>
   );
 }
