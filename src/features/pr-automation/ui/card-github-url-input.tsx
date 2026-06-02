@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { updateCard } from "@/entities/card/api/actions";
 import { Input } from "@/shared/ui/input";
@@ -15,6 +16,7 @@ export function CardGithubUrlInput({
   boardId: string;
   initialUrl: string | null;
 }) {
+  const router = useRouter();
   const [url, setUrl] = useState(initialUrl ?? "");
   const [saving, setSaving] = useState(false);
 
@@ -24,6 +26,7 @@ export function CardGithubUrlInput({
     try {
       await updateCard(cardId, { github_url: value === "" ? null : value }, boardId);
       toast.success("PR 링크 저장됨");
+      router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "저장 실패");
     } finally {
