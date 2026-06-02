@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ActionItems } from "@/features/meeting-to-cards/ui/action-items";
@@ -13,6 +13,7 @@ export function MeetingDetailPanel({ detail }: { detail: MeetingDetail }) {
   const router = useRouter();
   const { meeting, actionItems, targets } = detail;
   const [pending, start] = useTransition();
+  const [tab, setTab] = useState("transcript");
 
   function call(path: string, label: string) {
     start(async () => {
@@ -25,6 +26,7 @@ export function MeetingDetailPanel({ detail }: { detail: MeetingDetail }) {
         const json = await res.json();
         if (!res.ok) throw new Error(json.error ?? `${label} 실패`);
         toast.success(`${label} 완료`);
+        if (path.includes("extract-tasks")) setTab("actions");
         router.refresh();
       } catch (e) {
         toast.error(e instanceof Error ? e.message : `${label} 실패`);
@@ -33,7 +35,7 @@ export function MeetingDetailPanel({ detail }: { detail: MeetingDetail }) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-8">
+    <div className="w-full max-w-3xl space-y-6 px-8 py-8">
       {/* 헤더 */}
       <div className="flex items-start justify-between gap-4">
         <h1 className="text-2xl font-bold text-foreground">{meeting.title}</h1>
@@ -74,7 +76,7 @@ export function MeetingDetailPanel({ detail }: { detail: MeetingDetail }) {
       )}
 
       {/* 탭: 트랜스크립트 / 추출된 작업 */}
-      <Tabs defaultValue="transcript">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="transcript">트랜스크립트</TabsTrigger>
           <TabsTrigger value="actions">
