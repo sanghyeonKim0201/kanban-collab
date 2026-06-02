@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import {
@@ -29,8 +29,19 @@ export function ColumnHeader({
   const { rename, remove } = useColumnActions(boardId);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
+  const committedRef = useRef(false);
+
+  function startEditing() {
+    setDraft(name);
+    committedRef.current = false;
+    setEditing(true);
+  }
 
   function commit() {
+    // Enter→setEditing(false) unmounts the input, whose blur fires commit() again.
+    // Guard synchronously so rename() runs at most once per edit session.
+    if (committedRef.current) return;
+    committedRef.current = true;
     const value = draft.trim();
     setEditing(false);
     if (value && value !== name) rename(columnId, value);
@@ -64,6 +75,7 @@ export function ColumnHeader({
           onKeyDown={(e) => {
             if (e.key === "Enter") { e.preventDefault(); commit(); }
             if (e.key === "Escape") {
+              committedRef.current = true; // cancel: suppress the unmount blur commit
               setDraft(name);
               setEditing(false);
             }
@@ -72,10 +84,7 @@ export function ColumnHeader({
         />
       ) : (
         <h3
-          onDoubleClick={() => {
-            setDraft(name);
-            setEditing(true);
-          }}
+          onDoubleClick={startEditing}
           className="flex-1 cursor-text truncate text-[13px] font-semibold text-foreground"
           title="더블클릭하여 이름 변경"
         >
@@ -93,14 +102,7 @@ export function ColumnHeader({
           <MoreHorizontal className="h-4 w-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onClick={() => {
-              setDraft(name);
-              setEditing(true);
-            }}
-          >
-            이름 변경
-          </DropdownMenuItem>
+          <DropdownMenuItem onClick={startEditing}>이름 변경</DropdownMenuItem>
           <DropdownMenuItem
             disabled={count > 0}
             onClick={() => remove(columnId)}
