@@ -12,6 +12,7 @@ import {
 } from "@/features/pr-automation/model/transition";
 import {
   appendWithRetry,
+  appendWithRetryReturning,
   UNIQUE_VIOLATION,
 } from "@/shared/lib/append-position";
 
@@ -47,7 +48,12 @@ export async function POST(request: NextRequest) {
       number?: number;
       merged?: boolean;
     };
-    issue?: { title: string; body?: string | null; html_url: string };
+    issue?: {
+      number?: number;
+      title: string;
+      body?: string | null;
+      html_url: string;
+    };
     action?: string;
   };
 
@@ -209,7 +215,83 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-    // issues → 새 카드 자동 생성은 보드 옵션(기본 OFF, 명세 8.1) — 적재만 수행.
+    // FR-17: 이슈 → 카드 연동. issues.opened 일 때 보드 첫 컬럼(position 최소)
+    // 끝에 카드 생성. github_url=이슈 URL 로 멱등 — 같은 이슈 URL 의 카드가 이미
+    // 있으면 skip(이벤트 재전송·reopen·재오픈 대비). delivery 멱등이 1차 방어이나
+    // github_url 중복 체크로 다중 delivery 도 안전하게 차단한다.
+    if (
+      event === "issues" &&
+      payload.action === "opened" &&
+      payload.issue
+    ) {
+      const issue = payload.issue;
+
+      // 멱등: 이 보드 컬럼 범위 내에서 같은 이슈 URL 의 카드가 이미 있으면 skip.
+      const { data: firstCol } = await admin
+        .from("columns")
+        .select("id")
+        .eq("board_id", board.id)
+        .order("position", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (firstCol) {
+        const { data: existing } = await admin
+          .from("cards")
+          .select("id")
+          .eq("column_id", firstCol.id)
+          .eq("github_url", issue.html_url)
+          .maybeSingle();
+
+        if (!existing) {
+          const targetColId = firstCol.id;
+          // 동시 생성(같은 컬럼 끝)을 unique 위반으로 감지하고 lastPos 재조회 +
+          // 재계산으로 재시도. 성공한 insert 의 카드 id 를 활동로그에 사용한다.
+          const { value: newCardId } = await appendWithRetryReturning<
+            string | null
+          >(
+            async () => {
+              const { data: lastCard } = await admin
+                .from("cards")
+                .select("position")
+                .eq("column_id", targetColId)
+                .order("position", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              return lastCard?.position ?? null;
+            },
+            async (position) => {
+              const { data, error } = await admin
+                .from("cards")
+                .insert({
+                  column_id: targetColId,
+                  title: issue.title,
+                  position,
+                  github_url: issue.html_url,
+                  created_by: null,
+                })
+                .select("id")
+                .single();
+              if (error) {
+                if (error.code === UNIQUE_VIOLATION) return { conflict: true };
+                throw new Error(error.message);
+              }
+              return { conflict: false, value: data?.id ?? null };
+            },
+          );
+
+          // 활동 피드 1줄(RLS insert 없음 → service_role 로만 기록). 실패해도
+          // 카드 생성은 이미 확정이므로 best-effort.
+          const issueLabel = issue.number != null ? `#${issue.number}` : "";
+          await admin.from("board_activity").insert({
+            board_id: board.id,
+            card_id: newCardId,
+            kind: "github_issue",
+            message: `🐙 이슈 ${issueLabel} → 카드 '${issue.title}' 생성`,
+          });
+        }
+      }
+    }
 
     if (eventRow) {
       await admin
