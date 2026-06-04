@@ -1,12 +1,17 @@
 "use client";
 import Link from "next/link";
-import { useBoardStore } from "@/entities/board/model/store";
 import { StatusPill } from "@/shared/ui/status-pill";
+import type { ColumnWithCards } from "@/shared/types/database";
 
 const priorityTone = { low: "neutral", medium: "warning", high: "danger" } as const;
 
-export function BoardListView({ boardId }: { boardId: string }) {
-  const columns = useBoardStore((s) => s.columns);
+export function BoardListView({
+  columns,
+  boardId,
+}: {
+  columns: ColumnWithCards[];
+  boardId: string;
+}) {
   const rows = columns.flatMap((c) =>
     c.cards.map((card) => ({ card, columnName: c.name })),
   );
@@ -21,6 +26,16 @@ export function BoardListView({ boardId }: { boardId: string }) {
         </tr>
       </thead>
       <tbody>
+        {rows.length === 0 && (
+          <tr>
+            <td
+              colSpan={4}
+              className="px-4 py-8 text-center text-muted-foreground"
+            >
+              조건에 맞는 카드가 없습니다.
+            </td>
+          </tr>
+        )}
         {rows.map(({ card, columnName }) => (
           <tr key={card.id} className="border-b border-border/60 hover:bg-surface-2">
             <td className="px-4 py-2">

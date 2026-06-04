@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -24,6 +24,14 @@ import { BoardColumn } from "./board-column";
 import { BoardToolbar, type BoardViewMode } from "./board-toolbar";
 import { BoardContextPanel } from "./board-context-panel";
 import { BoardListView } from "./board-list-view";
+import { BoardFilterBar } from "@/features/board-filter/ui/board-filter-bar";
+import {
+  EMPTY_CRITERIA,
+  filterCards,
+  isFilterActive,
+  type FilterCriteria,
+} from "@/features/board-filter/model/filter";
+import { distinctAssignees } from "@/features/board-filter/model/assignees";
 
 export function BoardView({
   initial,
@@ -38,11 +46,34 @@ export function BoardView({
   const columns = useBoardStore((s) => s.columns);
   const { onDragEnd } = useCardDnd(initial.id);
   const [mode, setMode] = useState<BoardViewMode>("board");
+  const [criteria, setCriteria] = useState<FilterCriteria>(EMPTY_CRITERIA);
   useBoardRealtime(initial.id);
 
   useEffect(() => {
     setBoard(initial);
   }, [initial, setBoard]);
+
+  // 보드 전환 시 필터 리셋(persist 불필요).
+  useEffect(() => {
+    setCriteria(EMPTY_CRITERIA);
+  }, [initial.id]);
+
+  const active = isFilterActive(criteria);
+  const assigneeOptions = useMemo(
+    () => distinctAssignees(columns),
+    [columns],
+  );
+
+  // 필터는 표시 레이어만 — 컬럼 구조는 유지, 매칭 안 되는 카드만 숨김.
+  // now 는 렌더마다 평가(마감일 today/week 기준일). 순수 필터엔 인자로 주입.
+  const visibleColumns = useMemo(() => {
+    if (!active) return columns;
+    const now = Date.now();
+    return columns.map((col) => ({
+      ...col,
+      cards: filterCards(col.cards, criteria, now),
+    }));
+  }, [columns, criteria, active]);
 
   // 명세 10.3: dnd-kit 키보드 접근성
   const sensors = useSensors(
@@ -64,7 +95,20 @@ export function BoardView({
           initialActivity={initialActivity}
         />
       }
-      toolbar={<BoardToolbar name={initial.name} mode={mode} onMode={setMode} />}
+      toolbar={
+        <BoardToolbar
+          name={initial.name}
+          mode={mode}
+          onMode={setMode}
+          right={
+            <BoardFilterBar
+              criteria={criteria}
+              onChange={setCriteria}
+              assignees={assigneeOptions}
+            />
+          }
+        />
+      }
     >
       {mode === "board" ? (
         <DndContext
@@ -77,7 +121,7 @@ export function BoardView({
               items={columns.map((c) => `colsort-${c.id}`)}
               strategy={horizontalListSortingStrategy}
             >
-              {columns.map((col) => (
+              {visibleColumns.map((col) => (
                 <BoardColumn
                   key={col.id}
                   column={col}
@@ -97,7 +141,7 @@ export function BoardView({
           </div>
         </DndContext>
       ) : (
-        <BoardListView boardId={initial.id} />
+        <BoardListView columns={visibleColumns} boardId={initial.id} />
       )}
     </WorkPane>
   );
