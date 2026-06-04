@@ -47,19 +47,36 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  await supabase
+  const { error: updateErr } = await supabase
     .from("meetings")
-    .update({ summary: extract.summary, status: "done" })
+    .update({
+      summary: extract.summary,
+      structured: {
+        attendees: extract.attendees,
+        agenda: extract.agenda,
+        discussion: extract.discussion,
+        decisions: extract.decisions,
+      },
+      status: "done",
+    })
     .eq("id", meeting.id);
+  if (updateErr) {
+    return NextResponse.json({ error: updateErr.message }, { status: 500 });
+  }
 
   if (extract.actionItems.length) {
-    await supabase.from("meeting_action_items").insert(
-      extract.actionItems.map((a) => ({
-        meeting_id: meeting.id,
-        title: a.title,
-        suggested_assignee: a.suggestedAssignee ?? null,
-      })),
-    );
+    const { error: insertErr } = await supabase
+      .from("meeting_action_items")
+      .insert(
+        extract.actionItems.map((a) => ({
+          meeting_id: meeting.id,
+          title: a.title,
+          suggested_assignee: a.suggestedAssignee ?? null,
+        })),
+      );
+    if (insertErr) {
+      return NextResponse.json({ error: insertErr.message }, { status: 500 });
+    }
   }
 
   return NextResponse.json({

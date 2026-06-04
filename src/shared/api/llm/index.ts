@@ -1,11 +1,15 @@
 import "server-only";
 
 import { serverEnv } from "@/shared/config/env";
-import { z } from "zod";
 import {
   parseClassification,
   type Classification,
 } from "@/shared/lib/parse-llm-json";
+import {
+  parseMeetingSummary,
+  heuristicMeetingSummary,
+  type MeetingSummary,
+} from "@/shared/lib/parse-meeting-summary";
 import {
   bumpPriorityForDueDate,
   heuristicAssigneeName,
@@ -18,16 +22,8 @@ export interface ClassifyExample {
   priority: string;
 }
 
-const meetingSchema = z.object({
-  summary: z.string(),
-  actionItems: z.array(
-    z.object({
-      title: z.string(),
-      suggestedAssignee: z.string().nullable().optional(),
-    }),
-  ),
-});
-export type MeetingExtract = z.infer<typeof meetingSchema>;
+/** FR-23: 구조화 회의 요약 결과(하위 호환: actionItems 유지) */
+export type MeetingExtract = MeetingSummary;
 
 interface PromptInput {
   title: string;
@@ -201,25 +197,31 @@ export async function classifyTask(input: {
   };
 }
 
-/** 명세 8.3-3: transcript → 요약 + action items */
+/**
+ * 명세 8.3-3 / FR-23: transcript → 구조화 회의록.
+ * {summary, attendees, agenda, discussion, decisions, actionItems} 반환.
+ * 키 미설정/빈 transcript 면 동일 형태의 휴리스틱 폴백.
+ */
 export async function summarizeMeeting(
   transcript: string,
 ): Promise<MeetingExtract> {
   const env = serverEnv();
   if (!env.LLM_API_KEY || !transcript.trim()) {
     trackUsage("stub", transcript.length);
-    return {
-      summary: transcript.slice(0, 280),
-      actionItems: [],
-    };
+    return heuristicMeetingSummary(transcript);
   }
   const prompt =
-    `다음 회의록을 한국어로 3~5문장 요약하고, 실행 가능한 작업(action items)을 ` +
-    `추출하라. JSON 형식으로만 출력: ` +
-    `{"summary":"...","actionItems":[{"title":"...","suggestedAssignee":null}]}\n\n` +
+    `다음 회의록을 분석해 한국어로 구조화하라. JSON 형식으로만 출력하고, 각 필드를 정확히 채워라.\n` +
+    `형식: {` +
+    `"summary":"3~5문장 한국어 요약",` +
+    `"attendees":["참석자 이름", ...],` +
+    `"agenda":["안건 항목", ...],` +
+    `"discussion":"주요 논의 내용 서술",` +
+    `"decisions":["결정사항", ...],` +
+    `"actionItems":[{"title":"할 일","suggestedAssignee":"담당자 이름 또는 null"}]` +
+    `}\n` +
+    `규칙: 회의록에서 확인되지 않는 항목은 빈 배열([]) 또는 빈 문자열("")로 두라. 추측해서 채우지 말 것.\n\n` +
     transcript;
-  const raw = await callLLM(prompt, 800);
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error("회의록 추출 JSON 파싱 실패");
-  return meetingSchema.parse(JSON.parse(match[0]));
+  const raw = await callLLM(prompt, 1000);
+  return parseMeetingSummary(raw);
 }

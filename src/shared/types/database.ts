@@ -83,6 +83,14 @@ export interface Comment {
   created_at: string;
 }
 
+/** FR-23: 회의록 구조화 결과(meetings.structured jsonb) */
+export interface MeetingStructured {
+  attendees: string[];
+  agenda: string[];
+  discussion: string;
+  decisions: string[];
+}
+
 export interface Meeting {
   id: string;
   workspace_id: string;
@@ -90,6 +98,7 @@ export interface Meeting {
   audio_url: string | null;
   transcript: string | null;
   summary: string | null;
+  structured: MeetingStructured | null;
   status: MeetingStatus;
   created_at: string;
 }

@@ -75,6 +75,35 @@ export function MeetingDetailPanel({ detail }: { detail: MeetingDetail }) {
         </section>
       )}
 
+      {/* FR-23: 구조화 결과 — 참석자/안건/논의/결정사항 */}
+      {meeting.structured &&
+        (meeting.structured.attendees.length > 0 ||
+          meeting.structured.agenda.length > 0 ||
+          meeting.structured.discussion.trim() !== "" ||
+          meeting.structured.decisions.length > 0) && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <StructuredList
+              title="참석자"
+              items={meeting.structured.attendees}
+            />
+            <StructuredList title="안건" items={meeting.structured.agenda} />
+            <StructuredList
+              title="결정사항"
+              items={meeting.structured.decisions}
+            />
+            {meeting.structured.discussion.trim() !== "" && (
+              <section className="sm:col-span-2">
+                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  논의 내용
+                </h2>
+                <p className="whitespace-pre-wrap rounded-lg border border-border bg-surface-2 p-4 text-sm text-foreground">
+                  {meeting.structured.discussion}
+                </p>
+              </section>
+            )}
+          </div>
+        )}
+
       {/* 탭: 트랜스크립트 / 추출된 작업 */}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
@@ -107,5 +136,25 @@ export function MeetingDetailPanel({ detail }: { detail: MeetingDetail }) {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+/** FR-23: 구조화 항목 목록 섹션. 빈 배열이면 렌더링하지 않는다. */
+function StructuredList({ title, items }: { title: string; items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <section>
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {title}
+      </h2>
+      <ul className="space-y-1 rounded-lg border border-border bg-surface-2 p-4 text-sm text-foreground">
+        {items.map((item, i) => (
+          <li key={i} className="flex gap-2">
+            <span className="text-muted-foreground">•</span>
+            <span className="flex-1">{item}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

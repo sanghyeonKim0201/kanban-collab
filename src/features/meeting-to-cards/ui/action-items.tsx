@@ -33,9 +33,43 @@ export function ActionItems({
   );
   const [columnId, setColumnId] = useState(flatColumns[0]?.id ?? "");
 
+  // FR-25: 항목별 편집 상태(제목/담당자). 카드로 보내기 직전 값 그대로 사용.
+  const [drafts, setDrafts] = useState<
+    Record<string, { title: string; assignee: string }>
+  >(() =>
+    Object.fromEntries(
+      items.map((it) => [
+        it.id,
+        { title: it.title, assignee: it.suggested_assignee ?? "" },
+      ]),
+    ),
+  );
+
+  function draftFor(item: MeetingActionItem) {
+    return (
+      drafts[item.id] ?? {
+        title: item.title,
+        assignee: item.suggested_assignee ?? "",
+      }
+    );
+  }
+
+  function patch(item: MeetingActionItem, field: "title" | "assignee", value: string) {
+    setDrafts((d) => ({
+      ...d,
+      [item.id]: { ...draftFor(item), [field]: value },
+    }));
+  }
+
   function makeCard(item: MeetingActionItem) {
     if (!columnId) {
       toast.error("대상 컬럼이 없습니다. 먼저 보드를 만드세요.");
+      return;
+    }
+    const draft = draftFor(item);
+    const title = draft.title.trim();
+    if (!title) {
+      toast.error("제목을 입력하세요.");
       return;
     }
     start(async () => {
@@ -43,7 +77,8 @@ export function ActionItems({
         await createCardFromActionItem({
           actionItemId: item.id,
           columnId,
-          title: item.title,
+          title,
+          suggestedAssignee: draft.assignee.trim() || null,
           meetingId,
         });
         toast.success("카드 생성됨");
@@ -81,32 +116,57 @@ export function ActionItems({
         </div>
       )}
       <ul className="space-y-2">
-        {items.map((it) => (
-          <li
-            key={it.id}
-            className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2.5 text-sm"
-          >
-            <span className="flex-1 text-foreground">{it.title}</span>
-            {it.suggested_assignee && (
-              <span className="text-xs text-muted-foreground">
-                @{it.suggested_assignee}
-              </span>
-            )}
-            {it.card_id ? (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Check className="h-3.5 w-3.5 text-success" /> 카드 연결됨
-              </span>
-            ) : (
-              <Button
-                size="sm"
-                disabled={pending}
-                onClick={() => makeCard(it)}
-              >
-                <Plus className="h-3.5 w-3.5" /> 카드로 보내기
-              </Button>
-            )}
-          </li>
-        ))}
+        {items.map((it) => {
+          const draft = draftFor(it);
+          const linked = Boolean(it.card_id);
+          return (
+            <li
+              key={it.id}
+              className="flex flex-col gap-2 rounded-lg border border-border bg-surface px-3 py-2.5 text-sm sm:flex-row sm:items-center"
+            >
+              {linked ? (
+                <>
+                  <span className="flex-1 text-foreground">{it.title}</span>
+                  {it.suggested_assignee && (
+                    <span className="text-xs text-muted-foreground">
+                      @{it.suggested_assignee}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Check className="h-3.5 w-3.5 text-success" /> 카드 연결됨
+                  </span>
+                </>
+              ) : (
+                <>
+                  {/* FR-25: 보드 추가 전 인라인 제목 편집 */}
+                  <input
+                    aria-label="작업 제목"
+                    value={draft.title}
+                    disabled={pending}
+                    onChange={(e) => patch(it, "title", e.target.value)}
+                    className="h-8 flex-1 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                  {/* FR-25: 담당자 편집 */}
+                  <input
+                    aria-label="담당자"
+                    placeholder="담당자"
+                    value={draft.assignee}
+                    disabled={pending}
+                    onChange={(e) => patch(it, "assignee", e.target.value)}
+                    className="h-8 w-full rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 sm:w-32"
+                  />
+                  <Button
+                    size="sm"
+                    disabled={pending}
+                    onClick={() => makeCard(it)}
+                  >
+                    <Plus className="h-3.5 w-3.5" /> 카드로 보내기
+                  </Button>
+                </>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
