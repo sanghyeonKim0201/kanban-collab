@@ -25,7 +25,10 @@ export async function getCardDetail(
   const { data: card } = await supabase
     .from("cards")
     .select(
-      "*, columns(board_id, boards(id, workspace_id)), card_assignees(user_profiles(id, email, display_name, avatar_url))",
+      // boards 임베드는 FK 를 명시한다. boards 가 pr_open_column_id/pr_merged_column_id 로
+      // columns 를 역참조하면서 columns↔boards 관계가 다중이 되어, 명시하지 않으면
+      // PostgREST PGRST201("more than one relationship") 로 카드 상세가 깨진다.
+      "*, columns(board_id, boards!columns_board_id_fkey(id, workspace_id)), card_assignees(user_profiles(id, email, display_name, avatar_url))",
     )
     .eq("id", cardId)
     .maybeSingle();
