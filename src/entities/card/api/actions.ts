@@ -3,8 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/shared/api/supabase/auth";
-import { between } from "@/shared/lib/lexorank";
-import { hasConflict, nextPosition } from "@/entities/card/model/move";
+import { nextPosition, hasConflict } from "@/entities/card/model/move";
+import {
+  UNIQUE_VIOLATION,
+  appendWithRetryReturning,
+} from "@/shared/lib/append-position";
 
 const createSchema = z.object({
   columnId: z.string().uuid(),
@@ -21,7 +24,16 @@ const updateSchema = z.object({
   github_url: z.string().url().nullable().optional(),
 });
 
-/** createCard — position 은 컬럼 마지막 카드 다음 (명세 6.2) */
+/**
+ * createCard — position 은 컬럼 마지막 카드 다음 (명세 6.2).
+ *
+ * 두 사용자가 거의 동시에 같은 컬럼 끝에 카드를 만들면 동일 lastPos 를 읽어 같은
+ * between(last,null) position 을 계산 → cards(column_id, position) unique 제약
+ * (마이그레이션 0004)이 두 번째 insert 를 unique_violation(23505)으로 거부한다.
+ * appendWithRetryReturning 으로 lastPos 재조회 + 재계산 재시도해 raw 에러 노출을
+ * 막는다. 직접 테이블 insert 라 supabase error.code 의 SQLSTATE 표면화가 신뢰성
+ * 있어(함수 내부 예외와 달리) code 비교로 충돌을 직접 감지한다.
+ */
 export async function createCard(input: {
   columnId: string;
   title: string;
@@ -30,25 +42,33 @@ export async function createCard(input: {
   const { columnId, title, boardId } = createSchema.parse(input);
   const { supabase, user } = await requireUser();
 
-  const { data: lastCard } = await supabase
-    .from("cards")
-    .select("position")
-    .eq("column_id", columnId)
-    .order("position", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const position = between(lastCard?.position ?? null, null);
-
-  const { data, error } = await supabase
-    .from("cards")
-    .insert({ column_id: columnId, title, position, created_by: user.id })
-    .select("id")
-    .single();
-  if (error) throw new Error(error.message);
+  const { value: id } = await appendWithRetryReturning<string>(
+    async () => {
+      const { data: lastCard } = await supabase
+        .from("cards")
+        .select("position")
+        .eq("column_id", columnId)
+        .order("position", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return lastCard?.position ?? null;
+    },
+    async (position) => {
+      const { data, error } = await supabase
+        .from("cards")
+        .insert({ column_id: columnId, title, position, created_by: user.id })
+        .select("id")
+        .single();
+      if (error) {
+        if (error.code === UNIQUE_VIOLATION) return { conflict: true };
+        throw new Error(error.message);
+      }
+      return { conflict: false, value: data.id as string };
+    },
+  );
 
   revalidatePath(`/board/${boardId}`);
-  return data.id as string;
+  return id;
 }
 
 export async function updateCard(

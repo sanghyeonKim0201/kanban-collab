@@ -158,4 +158,4 @@ between("U", "U"); // throw: "'a' (U) must be < 'b' (U)" → 그 사이 드롭 �
 
 ## Related
 - `docs/superpowers/specs/2026-06-02-github-pr-automation-design.md` 섹션 11(알려진 한계) — 본 패턴이 해결한 항목.
-- 구현: `src/features/pr-automation/model/append-position.ts`, `supabase/migrations/0004_pr_automation_hardening.sql`, `tests/unit/pr-automation-append.test.ts`.
+- 구현: `src/shared/lib/append-position.ts`, `supabase/migrations/0004_pr_automation_hardening.sql`, `tests/unit/pr-automation-append.test.ts`, `tests/unit/create-card-append.test.ts`.

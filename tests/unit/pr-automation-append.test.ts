@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { between } from "@/shared/lib/lexorank";
-import { appendWithRetry } from "@/features/pr-automation/model/append-position";
+import { appendWithRetry } from "@/shared/lib/append-position";
 
 /**
  * 동시 append position 충돌 회귀 (설계 문서 섹션 11).

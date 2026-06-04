@@ -197,7 +197,7 @@ function prBadgeState(action: string, merged: boolean): 'open'|'merged'|'closed'
 통제된 라이브 시연에선 발생하지 않아 v1 에서는 수용하고 후속 과제로 분리한다.
 
 Important 2건과 첫 Minor 는 마이그레이션 `0004_pr_automation_hardening.sql` +
-`appendWithRetry`(`features/pr-automation/model/append-position.ts`) 로 해결됨(아래 ✅).
+`appendWithRetry`(`src/shared/lib/append-position.ts`) 로 해결됨(아래 ✅).
 
 - ✅ **웹훅 delivery 멱등 키 부재:** GitHub 재전송(또는 UI Redeliver) 시 활동 로그가
   중복되고, 사용자가 수동으로 옮긴 카드를 자동화가 되돌릴 수 있다. **해결:** `github_events.delivery_id`

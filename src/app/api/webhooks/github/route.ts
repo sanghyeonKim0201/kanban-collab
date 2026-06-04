@@ -13,7 +13,7 @@ import {
 import {
   appendWithRetry,
   UNIQUE_VIOLATION,
-} from "@/features/pr-automation/model/append-position";
+} from "@/shared/lib/append-position";
 
 export const runtime = "nodejs";
 
