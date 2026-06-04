@@ -14,9 +14,15 @@ export interface WorkspaceListItem extends Workspace {
 
 export async function listMyWorkspaces(): Promise<WorkspaceListItem[]> {
   const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
   const { data, error } = await supabase
     .from("workspace_members")
     .select("role, workspaces(id, name, created_at)")
+    .eq("user_id", user.id)
     .order("created_at", { referencedTable: "workspaces", ascending: true });
 
   if (error) throw new Error(error.message);
