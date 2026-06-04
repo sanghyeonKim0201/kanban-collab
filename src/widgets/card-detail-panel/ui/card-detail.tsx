@@ -19,6 +19,10 @@ import {
   detachLabel,
 } from "@/entities/label/api/actions";
 import type { CardDetail } from "@/entities/card/api/detail";
+import {
+  toDateInputValue,
+  fromDateInputValue,
+} from "@/entities/card/model/due-date";
 import type { Priority } from "@/shared/types/database";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -48,6 +52,7 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
   const [title, setTitle] = useState(card.title);
   const [description, setDescription] = useState(card.description ?? "");
   const [priority, setPriority] = useState<Priority>(card.priority);
+  const [dueDate, setDueDate] = useState(toDateInputValue(card.due_date));
   const [comment, setComment] = useState("");
   const [tab, setTab] = useState("overview");
   const [pending, start] = useTransition();
@@ -70,6 +75,7 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
             title: title.trim(),
             description: description.trim() || null,
             priority,
+            due_date: fromDateInputValue(dueDate),
           },
           boardId,
         );
@@ -221,6 +227,28 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
                   {p}
                 </Button>
               ))}
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-4">
+            <SectionLabel>마감일</SectionLabel>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                aria-label="마감일"
+                className="h-9 rounded-md border border-border bg-surface px-2.5 text-[13px] text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              />
+              {dueDate && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setDueDate("")}
+                >
+                  지우기
+                </Button>
+              )}
             </div>
           </div>
 

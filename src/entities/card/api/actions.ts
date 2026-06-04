@@ -13,6 +13,9 @@ const createSchema = z.object({
   columnId: z.string().uuid(),
   title: z.string().trim().min(1, "제목을 입력하세요").max(200),
   boardId: z.string().uuid(),
+  description: z.string().max(10_000).nullable().optional(),
+  priority: z.enum(["low", "medium", "high"]).optional(),
+  due_date: z.string().datetime().nullable().optional(),
 });
 
 const updateSchema = z.object({
@@ -38,9 +41,23 @@ export async function createCard(input: {
   columnId: string;
   title: string;
   boardId: string;
+  description?: string | null;
+  priority?: "low" | "medium" | "high";
+  due_date?: string | null;
 }) {
-  const { columnId, title, boardId } = createSchema.parse(input);
+  const { columnId, title, boardId, description, priority, due_date } =
+    createSchema.parse(input);
   const { supabase, user } = await requireUser();
+
+  // 선택 속성은 들어온 것만 insert 에 포함 — 미지정 시 DB 기본값 유지.
+  const optional: {
+    description?: string | null;
+    priority?: "low" | "medium" | "high";
+    due_date?: string | null;
+  } = {};
+  if (description !== undefined) optional.description = description;
+  if (priority !== undefined) optional.priority = priority;
+  if (due_date !== undefined) optional.due_date = due_date;
 
   const { value: id } = await appendWithRetryReturning<string>(
     async () => {
@@ -56,7 +73,13 @@ export async function createCard(input: {
     async (position) => {
       const { data, error } = await supabase
         .from("cards")
-        .insert({ column_id: columnId, title, position, created_by: user.id })
+        .insert({
+          column_id: columnId,
+          title,
+          position,
+          created_by: user.id,
+          ...optional,
+        })
         .select("id")
         .single();
       if (error) {

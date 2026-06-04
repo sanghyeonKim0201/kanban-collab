@@ -9,15 +9,20 @@ export function BoardToolbar({
   mode,
   onMode,
   right,
+  menu,
 }: {
   name: string;
   mode: BoardViewMode;
   onMode: (m: BoardViewMode) => void;
   right?: React.ReactNode;
+  menu?: React.ReactNode;
 }) {
   return (
     <div className="flex w-full items-center gap-3">
-      <h1 className="text-[15px] font-semibold text-foreground">{name}</h1>
+      {/* menu(canEdit) 가 있으면 이름 렌더·편집을 menu 가 책임진다. */}
+      {menu ?? (
+        <h1 className="text-[15px] font-semibold text-foreground">{name}</h1>
+      )}
       <SegmentedControl
         value={mode}
         onChange={onMode}

@@ -24,6 +24,7 @@ import { BoardColumn } from "./board-column";
 import { BoardToolbar, type BoardViewMode } from "./board-toolbar";
 import { BoardContextPanel } from "./board-context-panel";
 import { BoardListView } from "./board-list-view";
+import { BoardMenu } from "@/features/board-edit/ui/board-menu";
 import { BoardFilterBar } from "@/features/board-filter/ui/board-filter-bar";
 import {
   EMPTY_CRITERIA,
@@ -100,6 +101,15 @@ export function BoardView({
           name={initial.name}
           mode={mode}
           onMode={setMode}
+          menu={
+            canEdit ? (
+              <BoardMenu
+                boardId={initial.id}
+                workspaceId={initial.workspace_id}
+                name={initial.name}
+              />
+            ) : undefined
+          }
           right={
             <BoardFilterBar
               criteria={criteria}
