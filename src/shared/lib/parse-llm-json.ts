@@ -12,6 +12,13 @@ export const classificationSchema = z.object({
   category: z.enum(CATEGORIES),
   priority: z.enum(["low", "medium", "high"]),
   confidence: z.number().min(0).max(1),
+  // FR-21: 추천 담당자 이름. 기존 응답과 호환되도록 optional·nullable.
+  // null/undefined/빈문자 모두 "추천 없음"으로 정규화한다.
+  suggestedAssignee: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((v) => (v && v.trim() !== "" ? v.trim() : null)),
 });
 
 export type Classification = z.infer<typeof classificationSchema>;

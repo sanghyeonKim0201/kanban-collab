@@ -371,6 +371,7 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
               cardId={card.id}
               boardId={boardId}
               currentCategory={card.ai_category}
+              assignedIds={assignees.map((a) => a.id)}
             />
           </div>
 

@@ -4,26 +4,36 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
-import { updateCard } from "@/entities/card/api/actions";
-import type { Classification } from "@/shared/lib/parse-llm-json";
+import { assignCard, updateCard } from "@/entities/card/api/actions";
 import { Button } from "@/shared/ui/button";
 import { Badge } from "@/shared/ui/badge";
 import { StatusPill } from "@/shared/ui/status-pill";
 
 const AUTO_KEY = "ai-classify-auto-apply";
 
+/** /api/ai/classify 응답 (route 의 ClassifyResponse 와 일치). */
+interface ClassifyResult {
+  category: string;
+  priority: "low" | "medium" | "high";
+  confidence: number;
+  suggestedAssignee: { id: string; name: string | null } | null;
+}
+
 export function ClassifyPanel({
   cardId,
   boardId,
   currentCategory,
+  assignedIds = [],
 }: {
   cardId: string;
   boardId: string;
   currentCategory: string | null;
+  /** 이미 카드에 지정된 담당자 id 목록(중복 지정 방지·표시용). */
+  assignedIds?: string[];
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [result, setResult] = useState<Classification | null>(null);
+  const [result, setResult] = useState<ClassifyResult | null>(null);
   const [autoApply, setAutoApply] = useState(false);
 
   useEffect(() => {
@@ -45,7 +55,7 @@ export function ClassifyPanel({
           body: JSON.stringify({ cardId }),
         });
         if (!res.ok) throw new Error((await res.json()).error ?? "분류 실패");
-        const data = (await res.json()) as Classification;
+        const data = (await res.json()) as ClassifyResult;
         setResult(data);
         if (autoApply) await apply(data);
         else router.refresh();
@@ -55,12 +65,16 @@ export function ClassifyPanel({
     });
   }
 
-  async function apply(data: Classification) {
+  async function apply(data: ClassifyResult) {
     await updateCard(
       cardId,
       { priority: data.priority, ai_category: data.category },
       boardId,
     );
+    // FR-21: 추천 담당자가 있고 아직 지정되지 않았으면 함께 지정.
+    if (data.suggestedAssignee && !assignedIds.includes(data.suggestedAssignee.id)) {
+      await assignCard(cardId, data.suggestedAssignee.id, boardId);
+    }
     toast.success("추천 적용됨");
     setResult(null);
     router.refresh();
@@ -97,6 +111,17 @@ export function ClassifyPanel({
               confidence {Math.round(result.confidence * 100)}%
             </span>
           </p>
+          {result.suggestedAssignee && (
+            <p className="text-muted-foreground">
+              추천 담당자:{" "}
+              <StatusPill tone="primary">
+                {result.suggestedAssignee.name ?? "이름 없음"}
+              </StatusPill>
+              {assignedIds.includes(result.suggestedAssignee.id) && (
+                <span className="ml-1 text-[10px]">(이미 지정됨)</span>
+              )}
+            </p>
+          )}
           <div className="flex gap-2">
             <Button
               size="sm"
