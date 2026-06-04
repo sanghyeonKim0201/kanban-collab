@@ -83,7 +83,7 @@ export function BoardContextPanel({
       {activity.length > 0 && (
         <div>
           <div className="mb-1.5 px-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            자동화 활동
+            활동
           </div>
           <div className="space-y-1">
             {activity.map((a) => (

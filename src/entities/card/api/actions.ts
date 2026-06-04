@@ -8,6 +8,14 @@ import {
   UNIQUE_VIOLATION,
   appendWithRetryReturning,
 } from "@/shared/lib/append-position";
+import { logActivity } from "@/entities/board/api/activity";
+import {
+  cardCreatedMessage,
+  cardUpdatedMessage,
+  cardMovedMessage,
+  cardDeletedMessage,
+  type CardUpdateField,
+} from "@/entities/card/model/activity-message";
 
 const createSchema = z.object({
   columnId: z.string().uuid(),
@@ -90,6 +98,13 @@ export async function createCard(input: {
     },
   );
 
+  // FR-09: 활동 이력(비치명). 카드 생성은 이미 확정.
+  await logActivity(supabase, {
+    boardId,
+    cardId: id,
+    message: cardCreatedMessage(title),
+  });
+
   revalidatePath(`/board/${boardId}`);
   return id;
 }
@@ -103,6 +118,20 @@ export async function updateCard(
   const { supabase } = await requireUser();
   const { error } = await supabase.from("cards").update(parsed).eq("id", id);
   if (error) throw new Error(error.message);
+
+  // FR-09: 변경 필드 + 현재 제목으로 수정 로그(비치명). 제목 1회 조회.
+  const changedFields = Object.keys(parsed) as CardUpdateField[];
+  const { data: card } = await supabase
+    .from("cards")
+    .select("title")
+    .eq("id", id)
+    .maybeSingle();
+  await logActivity(supabase, {
+    boardId,
+    cardId: id,
+    message: cardUpdatedMessage(card?.title ?? null, changedFields),
+  });
+
   revalidatePath(`/board/${boardId}`);
 }
 
@@ -121,9 +150,10 @@ export async function moveCard(input: {
 }) {
   const { supabase } = await requireUser();
 
+  // updated_at(충돌 감지) + title/column_id(활동 로그)를 한 번에 조회.
   const { data: current, error: readErr } = await supabase
     .from("cards")
-    .select("updated_at")
+    .select("updated_at, title, column_id")
     .eq("id", input.id)
     .single();
   if (readErr) throw new Error(readErr.message);
@@ -139,14 +169,45 @@ export async function moveCard(input: {
     .eq("id", input.id);
   if (error) throw new Error(error.message);
 
+  // FR-09: 컬럼이 실제로 바뀐 경우에만 이동 로그(비치명). 같은 컬럼 내 재정렬은
+  // 노이즈라 기록하지 않는다. 대상 컬럼 이름은 컬럼 변경 시에만 조회.
+  if (current.column_id !== input.columnId) {
+    const { data: column } = await supabase
+      .from("columns")
+      .select("name")
+      .eq("id", input.columnId)
+      .maybeSingle();
+    await logActivity(supabase, {
+      boardId: input.boardId,
+      cardId: input.id,
+      message: cardMovedMessage(current.title, column?.name ?? null),
+    });
+  }
+
   revalidatePath(`/board/${input.boardId}`);
   return position;
 }
 
 export async function deleteCard(id: string, boardId: string) {
   const { supabase } = await requireUser();
+
+  // 삭제 전 제목 확보(삭제 후엔 조회 불가). 활동 로그용.
+  const { data: card } = await supabase
+    .from("cards")
+    .select("title")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabase.from("cards").delete().eq("id", id);
   if (error) throw new Error(error.message);
+
+  // FR-09: 삭제 로그(비치명). card_id 는 FK ON DELETE SET NULL 이라 null 로 기록.
+  await logActivity(supabase, {
+    boardId,
+    cardId: null,
+    message: cardDeletedMessage(card?.title ?? null),
+  });
+
   revalidatePath(`/board/${boardId}`);
 }
 
