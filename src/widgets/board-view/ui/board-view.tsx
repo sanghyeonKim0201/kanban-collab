@@ -36,11 +36,13 @@ import { distinctAssignees } from "@/features/board-filter/model/assignees";
 
 export function BoardView({
   initial,
-  canEdit,
+  canManageStructure,
+  canEditCards,
   initialActivity,
 }: {
   initial: BoardWithColumns;
-  canEdit: boolean;
+  canManageStructure: boolean;
+  canEditCards: boolean;
   initialActivity: BoardActivity[];
 }) {
   const setBoard = useBoardStore((s) => s.setBoard);
@@ -87,7 +89,7 @@ export function BoardView({
       secondary={
         <BoardContextPanel
           boardId={initial.id}
-          canEdit={canEdit}
+          canManageStructure={canManageStructure}
           prAutomation={{
             enabled: initial.pr_automation_enabled,
             openColumnId: initial.pr_open_column_id,
@@ -102,7 +104,7 @@ export function BoardView({
           mode={mode}
           onMode={setMode}
           menu={
-            canEdit ? (
+            canManageStructure ? (
               <BoardMenu
                 boardId={initial.id}
                 workspaceId={initial.workspace_id}
@@ -136,11 +138,12 @@ export function BoardView({
                   key={col.id}
                   column={col}
                   boardId={initial.id}
-                  canEdit={canEdit}
+                  canManageStructure={canManageStructure}
+                  canEditCards={canEditCards}
                 />
               ))}
             </SortableContext>
-            {canEdit && (
+            {canManageStructure && (
               <AddColumn
                 boardId={initial.id}
                 lastPosition={

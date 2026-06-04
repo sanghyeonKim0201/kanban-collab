@@ -8,6 +8,7 @@ import type {
   UserProfile,
 } from "@/shared/types/database";
 import { listBoardLabels } from "@/entities/label/api/queries";
+import { canEditCards } from "@/entities/board/model/permissions";
 import { listComments, type CommentWithAuthor } from "./comments";
 
 export interface CardDetail {
@@ -15,6 +16,8 @@ export interface CardDetail {
   boardId: string;
   workspaceId: string;
   currentUserId: string | null;
+  /** FR-27: 현재 유저가 카드를 편집할 수 있는지(owner/admin/member). guest/비멤버는 false. */
+  canEditCards: boolean;
   assignees: UserProfile[];
   members: { role: Role; user: UserProfile }[];
   comments: CommentWithAuthor[];
@@ -63,6 +66,10 @@ export async function getCardDetail(
       user: m.user_profiles as unknown as UserProfile,
     }));
 
+  // FR-27: 현재 유저의 워크스페이스 역할으로 카드 편집 권한 판정. 멤버 행에서 찾는다.
+  const myRole =
+    members.find((m) => m.user.id === user?.id)?.role ?? null;
+
   // 댓글 목록과 보드 라벨 조회는 서로 독립 → 병렬 실행 (워터폴 제거).
   const [comments, boardLabels] = await Promise.all([
     listComments(cardId),
@@ -91,6 +98,7 @@ export async function getCardDetail(
     boardId,
     workspaceId,
     currentUserId: user?.id ?? null,
+    canEditCards: canEditCards(myRole),
     assignees: c.card_assignees
       .map((a) => a.user_profiles)
       .filter((u): u is UserProfile => !!u),

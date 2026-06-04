@@ -8,12 +8,12 @@ import type { BoardActivity } from "@/shared/types/database";
 
 export function BoardContextPanel({
   boardId,
-  canEdit,
+  canManageStructure,
   prAutomation,
   initialActivity,
 }: {
   boardId: string;
-  canEdit: boolean;
+  canManageStructure: boolean;
   prAutomation: { enabled: boolean; openColumnId: string | null; mergedColumnId: string | null };
   initialActivity: BoardActivity[];
 }) {
@@ -71,7 +71,7 @@ export function BoardContextPanel({
 
       <PrAutomationSettings
         boardId={boardId}
-        canEdit={canEdit}
+        canEdit={canManageStructure}
         columns={columns.map((c) => ({ id: c.id, name: c.name }))}
         initial={{
           enabled: prAutomation.enabled,

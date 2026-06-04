@@ -19,12 +19,14 @@ const priorityBar = {
 export function CardItem({
   card,
   boardId,
+  dragDisabled = false,
 }: {
   card: CardWithRelations;
   boardId: string;
+  dragDisabled?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: card.id, data: { type: "card", card } });
+    useSortable({ id: card.id, data: { type: "card", card }, disabled: dragDisabled });
 
   return (
     <div

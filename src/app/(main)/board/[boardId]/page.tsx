@@ -2,6 +2,10 @@ import { notFound } from "next/navigation";
 import { getBoardWithColumnsAndCards } from "@/entities/board/api/queries";
 import { getCurrentUser } from "@/entities/user/api/current-user";
 import { getMyBoardRole } from "@/entities/board/api/role";
+import {
+  canEditCards,
+  canManageStructure,
+} from "@/entities/board/model/permissions";
 import { listBoardActivity } from "@/entities/board/api/activity";
 import { BoardView } from "@/widgets/board-view/ui/board-view";
 import { CollaborationLayer } from "@/processes/realtime-collaboration/ui/collaboration-layer";
@@ -21,11 +25,14 @@ export default async function BoardPage({
   ]);
   if (!board) notFound();
 
-  const canEdit = role === "owner" || role === "admin";
-
   return (
     <>
-      <BoardView initial={board} canEdit={canEdit} initialActivity={activity} />
+      <BoardView
+        initial={board}
+        canManageStructure={canManageStructure(role)}
+        canEditCards={canEditCards(role)}
+        initialActivity={activity}
+      />
       {user && (
         <CollaborationLayer
           boardId={board.id}

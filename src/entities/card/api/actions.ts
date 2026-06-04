@@ -113,9 +113,26 @@ export async function updateCard(
   id: string,
   patch: z.infer<typeof updateSchema>,
   boardId: string,
+  expectedUpdatedAt?: string | null,
 ) {
   const parsed = updateSchema.parse(patch);
   const { supabase } = await requireUser();
+
+  // FR-13: 낙관적 동시 편집 충돌 가드. expectedUpdatedAt 제공 시 현재 updated_at 과
+  // 비교(moveCard 와 동일 패턴) — 불일치면 덮어쓰기 전에 거부한다. 미제공이면 검사 생략
+  // (AI 분류·GitHub URL 같은 비대화형 호출은 충돌 검사 없이 기존대로 동작).
+  if (expectedUpdatedAt !== undefined) {
+    const { data: current, error: readErr } = await supabase
+      .from("cards")
+      .select("updated_at")
+      .eq("id", id)
+      .single();
+    if (readErr) throw new Error(readErr.message);
+    if (hasConflict(expectedUpdatedAt, current.updated_at)) {
+      throw new Error("CONFLICT: 다른 사용자가 먼저 이 카드를 수정했습니다");
+    }
+  }
+
   const { error } = await supabase.from("cards").update(parsed).eq("id", id);
   if (error) throw new Error(error.message);
 

@@ -46,6 +46,7 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
     assignees,
     comments,
     currentUserId,
+    canEditCards,
     labels,
     boardLabels,
   } = detail;
@@ -60,11 +61,25 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
   const [editingValue, setEditingValue] = useState("");
   const [newLabelName, setNewLabelName] = useState("");
   const [newLabelColor, setNewLabelColor] = useState(DEFAULT_LABEL_COLOR);
+  // FR-27: guest/비멤버는 카드 편집 불가 → 모든 편집 컨트롤을 잠근다(읽기 전용).
+  const readOnly = !canEditCards;
   const assignedIds = new Set(assignees.map((a) => a.id));
   const attachedLabelIds = new Set(labels.map((l) => l.id));
   const unattachedLabels = boardLabels.filter(
     (l) => !attachedLabelIds.has(l.id),
   );
+
+  // FR-13: 저장 시 알고 있던 updated_at 을 보내 충돌 감지. CONFLICT 면 새로고침으로
+  // 최신 상태를 다시 받아온다(moveCard 의 충돌 UI 패턴과 동일).
+  function handleActionError(e: unknown, fallback: string) {
+    const msg = e instanceof Error ? e.message : fallback;
+    if (msg.startsWith("CONFLICT")) {
+      toast.error("다른 사용자가 먼저 수정했습니다. 새로고침합니다.");
+      router.refresh();
+    } else {
+      toast.error(msg);
+    }
+  }
 
   function save() {
     start(async () => {
@@ -78,11 +93,12 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
             due_date: fromDateInputValue(dueDate),
           },
           boardId,
+          card.updated_at,
         );
         toast.success("저장됨");
         router.refresh();
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "저장 실패");
+        handleActionError(e, "저장 실패");
       }
     });
   }
@@ -192,9 +208,10 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        readOnly={readOnly}
         aria-label="카드 제목"
         placeholder="카드 제목"
-        className="w-full rounded-md border border-border bg-surface px-2.5 py-1.5 text-base font-semibold text-foreground transition-colors hover:border-border-strong focus:border-primary/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        className="w-full rounded-md border border-border bg-surface px-2.5 py-1.5 text-base font-semibold text-foreground transition-colors hover:border-border-strong focus:border-primary/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 read-only:opacity-70"
       />
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -210,6 +227,7 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
+              readOnly={readOnly}
               placeholder="설명을 입력하세요"
             />
           </div>
@@ -223,6 +241,7 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
                   size="sm"
                   variant={priority === p ? "default" : "outline"}
                   onClick={() => setPriority(p)}
+                  disabled={readOnly}
                 >
                   {p}
                 </Button>
@@ -237,10 +256,11 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
+                disabled={readOnly}
                 aria-label="마감일"
-                className="h-9 rounded-md border border-border bg-surface px-2.5 text-[13px] text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                className="h-9 rounded-md border border-border bg-surface px-2.5 text-[13px] text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:opacity-70"
               />
-              {dueDate && (
+              {dueDate && !readOnly && (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -262,7 +282,7 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
                     key={m.user.id}
                     type="button"
                     onClick={() => toggleAssignee(m.user.id)}
-                    disabled={pending}
+                    disabled={pending || readOnly}
                     className={cn(
                       "flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs transition-colors",
                       active
@@ -301,7 +321,7 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
                     <button
                       type="button"
                       onClick={() => toggleLabel(l.id, true)}
-                      disabled={pending}
+                      disabled={pending || readOnly}
                       aria-label={`${l.name} 라벨 떼기`}
                       className="rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
                     >
@@ -323,8 +343,8 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
                     key={l.id}
                     type="button"
                     onClick={() => toggleLabel(l.id, false)}
-                    disabled={pending}
-                    className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
+                    disabled={pending || readOnly}
+                    className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground disabled:opacity-50"
                   >
                     <span
                       className="h-2 w-2 rounded-full"
@@ -336,6 +356,7 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
               </div>
             )}
 
+            {!readOnly && (
             <div className="flex items-center gap-1.5">
               <input
                 type="color"
@@ -364,16 +385,19 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
                 <Plus className="h-4 w-4" /> 추가
               </Button>
             </div>
+            )}
           </div>
 
-          <div className="border-t border-border pt-4">
-            <ClassifyPanel
-              cardId={card.id}
-              boardId={boardId}
-              currentCategory={card.ai_category}
-              assignedIds={assignees.map((a) => a.id)}
-            />
-          </div>
+          {!readOnly && (
+            <div className="border-t border-border pt-4">
+              <ClassifyPanel
+                cardId={card.id}
+                boardId={boardId}
+                currentCategory={card.ai_category}
+                assignedIds={assignees.map((a) => a.id)}
+              />
+            </div>
+          )}
 
           <div className="space-y-2 rounded-lg border border-border bg-surface p-3 text-xs text-muted-foreground">
             <p className="flex items-center gap-1.5 font-medium text-foreground">
@@ -394,19 +418,23 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
                 "보드 설정에서 저장소 연결 시 PR/Issue 자동 링크 (M3)"
               )}
             </p>
-            <CardGithubUrlInput
-              cardId={card.id}
-              boardId={boardId}
-              initialUrl={card.github_url}
-            />
+            {!readOnly && (
+              <CardGithubUrlInput
+                cardId={card.id}
+                boardId={boardId}
+                initialUrl={card.github_url}
+              />
+            )}
           </div>
 
-          {/* 스크롤 영역 하단 고정 저장 바 */}
-          <div className="sticky bottom-0 -mx-5 -mb-5 border-t border-border bg-surface px-5 py-3">
-            <Button onClick={save} disabled={pending} className="w-full">
-              {pending ? "저장 중…" : "저장"}
-            </Button>
-          </div>
+          {/* 스크롤 영역 하단 고정 저장 바. guest/비멤버는 편집 불가라 숨긴다. */}
+          {!readOnly && (
+            <div className="sticky bottom-0 -mx-5 -mb-5 border-t border-border bg-surface px-5 py-3">
+              <Button onClick={save} disabled={pending} className="w-full">
+                {pending ? "저장 중…" : "저장"}
+              </Button>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="activity" className="space-y-3 pt-4">
@@ -418,7 +446,7 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
             <div className="space-y-2">
               {comments.map((c) => {
                 const isOwn =
-                  !!currentUserId && c.author_id === currentUserId;
+                  !readOnly && !!currentUserId && c.author_id === currentUserId;
                 const isEditing = editingId === c.id;
                 return (
                   <div
@@ -484,22 +512,24 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
               })}
             </div>
           )}
-          <div className="sticky bottom-0 -mx-5 -mb-5 flex gap-2 border-t border-border bg-surface px-5 py-3">
-            <Input
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="댓글 입력"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  submitComment();
-                }
-              }}
-            />
-            <Button onClick={submitComment} disabled={pending}>
-              작성
-            </Button>
-          </div>
+          {!readOnly && (
+            <div className="sticky bottom-0 -mx-5 -mb-5 flex gap-2 border-t border-border bg-surface px-5 py-3">
+              <Input
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="댓글 입력"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    submitComment();
+                  }
+                }}
+              />
+              <Button onClick={submitComment} disabled={pending}>
+                작성
+              </Button>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

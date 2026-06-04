@@ -16,11 +16,13 @@ import type { ColumnWithCards } from "@/shared/types/database";
 export function BoardColumn({
   column,
   boardId,
-  canEdit,
+  canManageStructure,
+  canEditCards,
 }: {
   column: ColumnWithCards;
   boardId: string;
-  canEdit: boolean;
+  canManageStructure: boolean;
+  canEditCards: boolean;
 }) {
   const { setNodeRef: setDropRef, isOver } = useDroppable({
     id: column.id,
@@ -37,7 +39,7 @@ export function BoardColumn({
   } = useSortable({
     id: `colsort-${column.id}`,
     data: { type: "column-sort", columnId: column.id },
-    disabled: !canEdit,
+    disabled: !canManageStructure,
   });
 
   return (
@@ -53,9 +55,9 @@ export function BoardColumn({
         name={column.name}
         count={column.cards.length}
         boardId={boardId}
-        canEdit={canEdit}
+        canEdit={canManageStructure}
         dragHandle={
-          canEdit ? (
+          canManageStructure ? (
             <span {...attributes} {...listeners}>
               <GripVertical className="h-4 w-4" />
             </span>
@@ -73,13 +75,20 @@ export function BoardColumn({
           strategy={verticalListSortingStrategy}
         >
           {column.cards.map((card) => (
-            <CardItem key={card.id} card={card} boardId={boardId} />
+            <CardItem
+              key={card.id}
+              card={card}
+              boardId={boardId}
+              dragDisabled={!canEditCards}
+            />
           ))}
         </SortableContext>
       </div>
-      <div className="p-2">
-        <AddCard columnId={column.id} boardId={boardId} />
-      </div>
+      {canEditCards && (
+        <div className="p-2">
+          <AddCard columnId={column.id} boardId={boardId} />
+        </div>
+      )}
     </div>
   );
 }
