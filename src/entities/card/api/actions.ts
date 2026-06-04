@@ -171,3 +171,36 @@ export async function addComment(
   if (error) throw new Error(error.message);
   revalidatePath(`/board/${boardId}`);
 }
+
+/**
+ * updateComment — 본인 댓글 내용 수정 (명세 FR-08).
+ * author_id = auth.uid() eq 필터로 클라이언트 측에서도 본인 한정.
+ * RLS "comments update own" 정책(마이그레이션 0005)이 서버에서 강제.
+ */
+export async function updateComment(
+  commentId: string,
+  content: string,
+  boardId: string,
+) {
+  const trimmed = z.string().trim().min(1).max(5000).parse(content);
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("comments")
+    .update({ content: trimmed })
+    .eq("id", commentId)
+    .eq("author_id", user.id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/board/${boardId}`);
+}
+
+/** deleteComment — 본인 댓글 삭제 (명세 FR-08). RLS "comments delete own" 강제. */
+export async function deleteComment(commentId: string, boardId: string) {
+  const { supabase, user } = await requireUser();
+  const { error } = await supabase
+    .from("comments")
+    .delete()
+    .eq("id", commentId)
+    .eq("author_id", user.id);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/board/${boardId}`);
+}
