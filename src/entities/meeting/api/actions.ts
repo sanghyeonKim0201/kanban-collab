@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/shared/api/supabase/auth";
-import { between } from "@/shared/lib/lexorank";
+import {
+  UNIQUE_VIOLATION,
+  appendWithRetryReturning,
+} from "@/shared/lib/append-position";
 
 /** 명세 8.3-1: 음성/텍스트 업로드 → Storage + meetings(status=pending) */
 export async function createMeeting(formData: FormData) {
@@ -64,32 +67,43 @@ export async function createCardFromActionItem(input: {
 }) {
   const { supabase, user } = await requireUser();
 
-  const { data: lastCard } = await supabase
-    .from("cards")
-    .select("position")
-    .eq("column_id", input.columnId)
-    .order("position", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const { data: card, error } = await supabase
-    .from("cards")
-    .insert({
-      column_id: input.columnId,
-      title: input.title,
-      position: between(lastCard?.position ?? null, null),
-      created_by: user.id,
-    })
-    .select("id")
-    .single();
-  if (error) throw new Error(error.message);
+  // createCard 와 동일한 동시 생성 충돌(같은 컬럼 끝 동시 append → 23505) 견고화.
+  const { value: cardId } = await appendWithRetryReturning<string>(
+    async () => {
+      const { data: lastCard } = await supabase
+        .from("cards")
+        .select("position")
+        .eq("column_id", input.columnId)
+        .order("position", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return lastCard?.position ?? null;
+    },
+    async (position) => {
+      const { data: card, error } = await supabase
+        .from("cards")
+        .insert({
+          column_id: input.columnId,
+          title: input.title,
+          position,
+          created_by: user.id,
+        })
+        .select("id")
+        .single();
+      if (error) {
+        if (error.code === UNIQUE_VIOLATION) return { conflict: true };
+        throw new Error(error.message);
+      }
+      return { conflict: false, value: card.id as string };
+    },
+  );
 
   const { error: linkErr } = await supabase
     .from("meeting_action_items")
-    .update({ card_id: card.id })
+    .update({ card_id: cardId })
     .eq("id", input.actionItemId);
   if (linkErr) throw new Error(linkErr.message);
 
   revalidatePath(`/meetings/${input.meetingId}`);
-  return card.id as string;
+  return cardId;
 }

@@ -5,12 +5,15 @@ import {
   verifySignature,
 } from "@/shared/lib/github-signature";
 import { createAdminClient } from "@/shared/api/supabase/admin";
-import { between } from "@/shared/lib/lexorank";
 import {
   resolvePrTransition,
   pickTargetColumn,
   prBadgeState,
 } from "@/features/pr-automation/model/transition";
+import {
+  appendWithRetry,
+  UNIQUE_VIOLATION,
+} from "@/shared/lib/append-position";
 
 export const runtime = "nodejs";
 
@@ -66,11 +69,41 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, skipped: "repo not linked" });
   }
 
-  const { data: eventRow } = await admin
+  // 멱등 키: GitHub 의 at-least-once 재전송(자동 retry/UI Redeliver)은 동일
+  // X-GitHub-Delivery 를 유지한다. 이미 처리된 delivery 면 early-return 하여
+  // 활동로그 중복·수동 이동 되돌림을 막는다.
+  const delivery = request.headers.get("x-github-delivery");
+  if (delivery) {
+    const { data: dup } = await admin
+      .from("github_events")
+      .select("id")
+      .eq("delivery_id", delivery)
+      .maybeSingle();
+    if (dup) {
+      return NextResponse.json({ ok: true, skipped: "duplicate delivery" });
+    }
+  }
+
+  const { data: eventRow, error: insertError } = await admin
     .from("github_events")
-    .insert({ board_id: board.id, event_type: event, payload })
+    .insert({
+      board_id: board.id,
+      event_type: event,
+      payload,
+      delivery_id: delivery,
+    })
     .select("id")
     .single();
+  if (insertError) {
+    // 동시 동일 delivery 경합 → unique 위반도 중복으로 처리 (위 SELECT 백스톱).
+    if (insertError.code === UNIQUE_VIOLATION) {
+      return NextResponse.json({ ok: true, skipped: "duplicate delivery" });
+    }
+    return NextResponse.json(
+      { ok: false, error: insertError.message },
+      { status: 500 },
+    );
+  }
 
   // 이벤트별 처리 (명세 8.1)
   try {
@@ -128,42 +161,52 @@ export async function POST(request: NextRequest) {
       const targetColId = pickTargetColumn(board, transition);
 
       for (const card of linkedCards ?? []) {
-        const update: {
-          github_pr_state: string;
-          column_id?: string;
-          position?: string;
-        } = {
-          github_pr_state: badge,
-        };
-        let movedToName: string | null = null;
-
-        if (targetColId && card.column_id !== targetColId) {
-          const { data: lastCard } = await admin
-            .from("cards")
-            .select("position")
-            .eq("column_id", targetColId)
-            .order("position", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          update.column_id = targetColId;
-          update.position = between(lastCard?.position ?? null, null);
-          movedToName =
-            (boardCols ?? []).find(
-              (c: { id: string; name: string }) => c.id === targetColId,
-            )?.name ?? null;
-        }
-
-        await admin.from("cards").update(update).eq("id", card.id);
-
-        if (movedToName) {
-          const verb = transition === "done" ? "머지됨" : "열림";
-          await admin.from("board_activity").insert({
-            board_id: board.id,
-            card_id: card.id,
-            kind: "pr_automation",
-            message: `🤖 PR #${pr.number ?? "?"} ${verb} → '${card.title}'을(를) ${movedToName}(으)로 이동`,
+        if (!targetColId || card.column_id === targetColId) {
+          // 이동 없음 → 배지만 갱신 (경합·활동로그 없음).
+          await admin.rpc("apply_pr_card_move", {
+            p_card_id: card.id,
+            p_pr_state: badge,
           });
+          continue;
         }
+
+        const movedToName =
+          (boardCols ?? []).find(
+            (c: { id: string; name: string }) => c.id === targetColId,
+          )?.name ?? null;
+        const verb = transition === "done" ? "머지됨" : "열림";
+        const activityMessage = movedToName
+          ? `🤖 PR #${pr.number ?? "?"} ${verb} → '${card.title}'을(를) ${movedToName}(으)로 이동`
+          : null;
+
+        // 동시 append 충돌(같은 컬럼 끝 동시 추가)을 unique 위반으로 감지하고
+        // lastPos 재조회 + 재계산으로 재시도. cards.update + 활동로그는 RPC 한
+        // 트랜잭션으로 묶여 부분 실패가 없다.
+        await appendWithRetry(
+          async () => {
+            const { data: lastCard } = await admin
+              .from("cards")
+              .select("position")
+              .eq("column_id", targetColId)
+              .order("position", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            return lastCard?.position ?? null;
+          },
+          async (position) => {
+            const { data, error } = await admin.rpc("apply_pr_card_move", {
+              p_card_id: card.id,
+              p_pr_state: badge,
+              p_target_column_id: targetColId,
+              p_position: position,
+              p_board_id: board.id,
+              p_activity_message: activityMessage,
+            });
+            if (error) throw new Error(error.message);
+            // RPC 가 동시 append 충돌을 'conflict' 로 직접 신호한다(SQLSTATE 표면화 비의존).
+            return { conflict: data === "conflict" };
+          },
+        );
       }
     }
     // issues → 새 카드 자동 생성은 보드 옵션(기본 OFF, 명세 8.1) — 적재만 수행.

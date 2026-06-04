@@ -196,14 +196,25 @@ function prBadgeState(action: string, merged: boolean): 'open'|'merged'|'closed'
 적대적 리뷰(2026-06-02)에서 Critical 없음, Important 2건 확인. 둘 다 트리거 조건이
 통제된 라이브 시연에선 발생하지 않아 v1 에서는 수용하고 후속 과제로 분리한다.
 
-- **웹훅 delivery 멱등 키 부재:** GitHub 재전송(또는 UI Redeliver) 시 활동 로그가
-  중복되고, 사용자가 수동으로 옮긴 카드를 자동화가 되돌릴 수 있다. 해결: `github_events`
-  에 `X-GitHub-Delivery` id 를 unique 로 저장하고 기처리 delivery 는 early-return.
-- **동시 append position 충돌:** 두 PR 웹훅이 거의 동시에 같은 타깃 컬럼 끝에 append 하면
+Important 2건과 첫 Minor 는 마이그레이션 `0004_pr_automation_hardening.sql` +
+`appendWithRetry`(`src/shared/lib/append-position.ts`) 로 해결됨(아래 ✅).
+
+- ✅ **웹훅 delivery 멱등 키 부재:** GitHub 재전송(또는 UI Redeliver) 시 활동 로그가
+  중복되고, 사용자가 수동으로 옮긴 카드를 자동화가 되돌릴 수 있다. **해결:** `github_events.delivery_id`
+  (`X-GitHub-Delivery`) unique 컬럼 추가, route 진입부에서 기처리 delivery 는 early-return
+  (`skipped: "duplicate delivery"`). 동시 경합은 insert unique 위반(23505)으로 백스톱.
+- ✅ **동시 append position 충돌:** 두 PR 웹훅이 거의 동시에 같은 타깃 컬럼 끝에 append 하면
   동일 `lastPos` 를 읽어 같은 position 을 계산 → 두 카드 동일 position → 이후 그 사이 드롭이
-  `lexorank.between(a≥b)` 에러로 실패. 해결: 이동을 DB RPC(advisory lock/FOR UPDATE)로
-  원자화하거나 충돌 시 재시도.
-- (Minor) `cards.update` 성공 후 `board_activity.insert` 실패 시 부분 실패. 단일 RPC 트랜잭션
-  또는 활동 로그 실패의 비치명 처리로 보완 가능.
-- (Minor) `boards.github_repo` 에 unique 제약 없음 — 같은 레포를 두 보드가 연결하면
+  `lexorank.between(a≥b)` 에러로 실패. **해결:** `cards(column_id, position)` unique 제약으로
+  충돌을 감지하고, `appendWithRetry` 가 `lastPos` 재조회 + `between(last,null)` 재계산으로
+  재시도. lexorank 는 JS 단일 소스 유지(단위테스트 `pr-automation-append.test.ts`).
+- ✅ (Minor) `cards.update` 성공 후 `board_activity.insert` 실패 시 부분 실패. **해결:** 이동은
+  `apply_pr_card_move` RPC 한 트랜잭션(update + activity insert)으로 원자화.
+- (Minor, 미해결) `boards.github_repo` 에 unique 제약 없음 — 같은 레포를 두 보드가 연결하면
   `maybeSingle()` 이 비결정적/skip. unique 제약 또는 다중 보드 루프로 보완.
+  (다중 보드↔1레포 매핑 정책이 미확정이라 제약을 보류 — 정책 확정 후 별도 처리.)
+
+### 후속 (스코프 밖, 본 작업에서 새로 식별)
+- `cards(column_id, position)` unique 제약은 `createCard`/`moveCard`(드래그)에도 적용된다.
+  드래그는 충돌 시 기존 낙관적 롤백 + 토스트로 graceful degradation 하지만, `createCard`
+  동시 생성 경합은 현재 재시도 없이 throw 한다 — webhook 과 동일한 append 재시도 적용을 후속 검토.
