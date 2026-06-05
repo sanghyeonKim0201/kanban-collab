@@ -69,6 +69,26 @@ export async function listMyWorkspacesWithCounts(): Promise<
   );
 }
 
+/** 현재 유저의 이 워크스페이스 역할. 멤버 아니면 null. */
+export async function getMyWorkspaceRole(
+  workspaceId: string,
+): Promise<Role | null> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("workspace_members")
+    .select("role")
+    .eq("workspace_id", workspaceId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  return (data?.role as Role | undefined) ?? null;
+}
+
 export async function getWorkspace(id: string): Promise<Workspace | null> {
   const supabase = createClient();
   const { data } = await supabase
