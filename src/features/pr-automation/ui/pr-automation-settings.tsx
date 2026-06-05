@@ -5,8 +5,21 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { setPrAutomation } from "@/entities/board/api/actions";
 import { Button } from "@/shared/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/ui/select";
 
 type Col = { id: string; name: string };
+
+/**
+ * radix Select 는 value="" 를 SelectItem 에 못 쓴다.
+ * "없음"(컬럼 미지정) 은 NONE sentinel 로 표현하고, 저장 시 빈문자열/ null 로 환원한다.
+ */
+const NONE = "__none__";
 
 /** 이름 휴리스틱으로 기본 매핑 추천(미설정 시). */
 function suggest(cols: Col[], kind: "open" | "done"): string | null {
@@ -62,28 +75,40 @@ export function PrAutomationSettings({
         </label>
       </div>
       <div className="space-y-2">
-        <label className="block text-[12px] text-muted-foreground">
-          PR 열림 →
-          <select
-            value={openCol}
-            onChange={(e) => setOpenCol(e.target.value)}
-            className="ml-2 rounded-md border border-border bg-surface-2 px-1.5 py-0.5 text-[13px] text-foreground"
+        <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+          <span>PR 열림 →</span>
+          <Select
+            value={openCol || NONE}
+            onValueChange={(v) => setOpenCol(v === NONE ? "" : v)}
           >
-            <option value="">없음</option>
-            {columns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-          </select>
-        </label>
-        <label className="block text-[12px] text-muted-foreground">
-          PR 머지 →
-          <select
-            value={mergedCol}
-            onChange={(e) => setMergedCol(e.target.value)}
-            className="ml-2 rounded-md border border-border bg-surface-2 px-1.5 py-0.5 text-[13px] text-foreground"
+            <SelectTrigger aria-label="PR 열림 시 이동할 컬럼" className="h-8 w-auto min-w-[7rem] bg-surface-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE}>없음</SelectItem>
+              {columns.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+          <span>PR 머지 →</span>
+          <Select
+            value={mergedCol || NONE}
+            onValueChange={(v) => setMergedCol(v === NONE ? "" : v)}
           >
-            <option value="">없음</option>
-            {columns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-          </select>
-        </label>
+            <SelectTrigger aria-label="PR 머지 시 이동할 컬럼" className="h-8 w-auto min-w-[7rem] bg-surface-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE}>없음</SelectItem>
+              {columns.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <Button size="sm" onClick={save} disabled={saving} className="mt-3">저장</Button>
     </div>

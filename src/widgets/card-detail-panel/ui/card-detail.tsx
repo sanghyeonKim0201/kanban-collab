@@ -22,10 +22,13 @@ import type { CardDetail } from "@/entities/card/api/detail";
 import {
   toDateInputValue,
   fromDateInputValue,
+  dateToInputValue,
+  inputValueToDate,
 } from "@/entities/card/model/due-date";
 import type { Priority } from "@/shared/types/database";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
+import { DatePicker } from "@/shared/ui/date-picker";
 import { Textarea } from "@/shared/ui/textarea";
 import { Avatar, AvatarFallback } from "@/shared/ui/avatar";
 import { cn } from "@/shared/lib/cn";
@@ -252,23 +255,13 @@ export function CardDetailPanel({ detail }: { detail: CardDetail }) {
           <div className="border-t border-border pt-4">
             <SectionLabel>마감일</SectionLabel>
             <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+              <DatePicker
+                value={inputValueToDate(dueDate)}
+                onChange={(d) => setDueDate(dateToInputValue(d))}
                 disabled={readOnly}
+                placeholder="마감일 없음"
                 aria-label="마감일"
-                className="h-9 rounded-md border border-border bg-surface px-2.5 text-[13px] text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:opacity-70"
               />
-              {dueDate && !readOnly && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setDueDate("")}
-                >
-                  지우기
-                </Button>
-              )}
             </div>
           </div>
 

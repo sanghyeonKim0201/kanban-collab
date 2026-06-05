@@ -7,6 +7,13 @@ import { Check, Plus } from "lucide-react";
 import { createCardFromActionItem } from "@/entities/meeting/api/actions";
 import type { MeetingActionItem } from "@/shared/types/database";
 import { Button } from "@/shared/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/ui/select";
 
 interface Target {
   boardId: string;
@@ -102,17 +109,18 @@ export function ActionItems({
       {flatColumns.length > 0 && (
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">대상 컬럼</span>
-          <select
-            value={columnId}
-            onChange={(e) => setColumnId(e.target.value)}
-            className="h-8 rounded-lg border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-          >
-            {flatColumns.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.label}
-              </option>
-            ))}
-          </select>
+          <Select value={columnId} onValueChange={setColumnId}>
+            <SelectTrigger aria-label="대상 컬럼" className="h-8 w-auto min-w-[10rem]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {flatColumns.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
       <ul className="space-y-2">

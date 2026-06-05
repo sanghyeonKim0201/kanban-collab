@@ -5,18 +5,24 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { createCard } from "@/entities/card/api/actions";
-import { fromDateInputValue } from "@/entities/card/model/due-date";
+import {
+  fromDateInputValue,
+  dateToInputValue,
+  inputValueToDate,
+} from "@/entities/card/model/due-date";
 import type { Priority } from "@/shared/types/database";
 import { Button } from "@/shared/ui/button";
 import { Textarea } from "@/shared/ui/textarea";
-import { cn } from "@/shared/lib/cn";
+import { DatePicker } from "@/shared/ui/date-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/ui/select";
 
 const PRIORITIES: Priority[] = ["low", "medium", "high"];
-
-const fieldClass = cn(
-  "h-9 w-full rounded-md border border-border bg-surface px-2.5 text-[13px] text-foreground",
-  "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
-);
 
 export function AddCard({
   columnId,
@@ -118,24 +124,27 @@ export function AddCard({
             onChange={(e) => setDescription(e.target.value)}
           />
           <div className="flex gap-2">
-            <select
+            <Select
               value={priority}
-              onChange={(e) => setPriority(e.target.value as Priority)}
-              aria-label="우선순위"
-              className={fieldClass}
+              onValueChange={(v) => setPriority(v as Priority)}
             >
-              {PRIORITIES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
+              <SelectTrigger aria-label="우선순위" className="flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PRIORITIES.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <DatePicker
+              value={inputValueToDate(dueDate)}
+              onChange={(d) => setDueDate(dateToInputValue(d))}
+              placeholder="마감일"
               aria-label="마감일"
-              className={fieldClass}
+              className="flex-1"
             />
           </div>
         </div>

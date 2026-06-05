@@ -1,8 +1,14 @@
 "use client";
 
 import { Search, X } from "lucide-react";
-import { cn } from "@/shared/lib/cn";
 import { Input } from "@/shared/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/ui/select";
 import type { Priority, UserProfile } from "@/shared/types/database";
 import {
   type DueFilter,
@@ -11,11 +17,7 @@ import {
   isFilterActive,
 } from "../model/filter";
 
-const selectClass = cn(
-  "h-9 rounded-lg border border-border bg-surface px-2.5 text-[13px] text-foreground",
-  "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
-  "disabled:cursor-not-allowed disabled:opacity-50",
-);
+const triggerClass = "w-auto min-w-[7.5rem]";
 
 const priorityOptions: { value: Priority | "all"; label: string }[] = [
   { value: "all", label: "우선순위 전체" },
@@ -56,49 +58,56 @@ export function BoardFilterBar({
         />
       </div>
 
-      <select
+      <Select
         value={criteria.priority}
-        onChange={(e) =>
-          onChange({ ...criteria, priority: e.target.value as Priority | "all" })
+        onValueChange={(v) =>
+          onChange({ ...criteria, priority: v as Priority | "all" })
         }
-        aria-label="우선순위 필터"
-        className={selectClass}
       >
-        {priorityOptions.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger aria-label="우선순위 필터" className={triggerClass}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {priorityOptions.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-      <select
+      <Select
         value={criteria.assigneeId}
-        onChange={(e) => onChange({ ...criteria, assigneeId: e.target.value })}
-        aria-label="담당자 필터"
-        className={selectClass}
+        onValueChange={(v) => onChange({ ...criteria, assigneeId: v })}
       >
-        <option value="all">담당자 전체</option>
-        {assignees.map((a) => (
-          <option key={a.id} value={a.id}>
-            {a.display_name ?? a.email ?? a.id}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger aria-label="담당자 필터" className={triggerClass}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">담당자 전체</SelectItem>
+          {assignees.map((a) => (
+            <SelectItem key={a.id} value={a.id}>
+              {a.display_name ?? a.email ?? a.id}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-      <select
+      <Select
         value={criteria.due}
-        onChange={(e) =>
-          onChange({ ...criteria, due: e.target.value as DueFilter })
-        }
-        aria-label="마감일 필터"
-        className={selectClass}
+        onValueChange={(v) => onChange({ ...criteria, due: v as DueFilter })}
       >
-        {dueOptions.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger aria-label="마감일 필터" className={triggerClass}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {dueOptions.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       {active && (
         <button

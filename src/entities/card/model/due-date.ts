@@ -23,3 +23,26 @@ export function fromDateInputValue(value: string): string | null {
   if (Number.isNaN(d.getTime())) return null;
   return d.toISOString();
 }
+
+/**
+ * DatePicker 가 주는 Date(또는 null) → date input 문자열(YYYY-MM-DD).
+ * DatePicker 의 Date 는 로컬 타임존 자정이므로 toISOString(UTC) 대신
+ * 로컬 연/월/일을 직접 포맷해 날짜가 하루 밀리지 않게 한다.
+ */
+export function dateToInputValue(date: Date | null | undefined): string {
+  if (!date || Number.isNaN(date.getTime())) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** date input 문자열(YYYY-MM-DD) → DatePicker 용 Date(로컬 자정). 빈값이면 null. */
+export function inputValueToDate(value: string): Date | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const [y, m, d] = trimmed.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const date = new Date(y, m - 1, d);
+  return Number.isNaN(date.getTime()) ? null : date;
+}

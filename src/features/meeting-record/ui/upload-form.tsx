@@ -8,6 +8,13 @@ import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { Textarea } from "@/shared/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/ui/select";
 
 export function UploadForm({
   workspaces,
@@ -37,18 +44,20 @@ export function UploadForm({
     >
       <div className="space-y-1.5">
         <Label htmlFor="ws">워크스페이스</Label>
-        <select
-          id="ws"
-          name="workspaceId"
-          required
-          className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-        >
-          {workspaces.map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
+        {/* radix Select 는 name prop 으로 form 에 hidden input 을 emit → FormData("workspaceId") 보존.
+            네이티브 select 는 첫 옵션이 자동 선택됐으므로 defaultValue 로 동일 동작 유지. */}
+        <Select name="workspaceId" required defaultValue={workspaces[0]?.id}>
+          <SelectTrigger id="ws" aria-label="워크스페이스" className="w-full">
+            <SelectValue placeholder="워크스페이스 선택" />
+          </SelectTrigger>
+          <SelectContent>
+            {workspaces.map((w) => (
+              <SelectItem key={w.id} value={w.id}>
+                {w.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-1.5">
