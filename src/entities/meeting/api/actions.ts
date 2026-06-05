@@ -58,6 +58,15 @@ export async function createMeeting(formData: FormData) {
   return data.id as string;
 }
 
+/** 회의록 삭제 — RLS(meetings write: 멤버 이상)로 권한 검증, action item 은 FK cascade 로 정리. */
+export async function deleteMeeting(meetingId: string) {
+  const id = z.string().uuid().parse(meetingId);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("meetings").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/meetings");
+}
+
 /**
  * 명세 8.3-4 / FR-25: action item → 카드 생성 후 card_id 연결.
  * 보드 추가 전 사용자가 수정한 title/assignee 를 반영한다.

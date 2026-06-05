@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Sparkles } from "lucide-react";
 import { setBoardRepo } from "@/entities/board/api/actions";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -43,6 +44,17 @@ export function RepoForm({
         onChange={(e) => setRepo(e.target.value)}
         className="flex-1 font-mono text-xs"
       />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 shrink-0 text-primary"
+        onClick={() => setRepo("octocat/Hello-World")}
+        aria-label="시안 저장소"
+        title="시안 저장소"
+      >
+        <Sparkles className="h-4 w-4" />
+      </Button>
       <Button size="sm" onClick={save} disabled={pending}>
         {pending ? "저장 중…" : "연결"}
       </Button>

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { createCard } from "@/entities/card/api/actions";
 import {
   fromDateInputValue,
@@ -49,6 +49,20 @@ export function AddCard({
     setOpen(false);
   }
 
+  /** 시연용: 폼을 열고 상세까지 샘플로 채운다. */
+  function fillSample() {
+    setOpen(true);
+    setShowDetails(true);
+    setTitle("로그인 토큰 만료 버그 수정");
+    setDescription(
+      "로그인 후 일정 시간이 지나면 토큰이 만료되어 강제 로그아웃되는 문제. 토큰 갱신 로직 점검 필요.",
+    );
+    setPriority("high");
+    const due = new Date();
+    due.setDate(due.getDate() + 3);
+    setDueDate(dateToInputValue(due));
+  }
+
   function submit() {
     const value = title.trim();
     if (!value) return;
@@ -75,14 +89,26 @@ export function AddCard({
 
   if (!open) {
     return (
-      <Button
-        variant="ghost"
-        size="sm"
-        className="w-full justify-start rounded-md text-muted-foreground hover:bg-surface-2 hover:text-foreground"
-        onClick={() => setOpen(true)}
-      >
-        <Plus className="h-4 w-4" /> 카드 추가
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="flex-1 justify-start rounded-md text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+          onClick={() => setOpen(true)}
+        >
+          <Plus className="h-4 w-4" /> 카드 추가
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 shrink-0 text-primary"
+          onClick={fillSample}
+          aria-label="시안 카드 채우기"
+          title="시안 카드"
+        >
+          <Sparkles className="h-4 w-4" />
+        </Button>
+      </div>
     );
   }
 

@@ -3,6 +3,7 @@ import { Mic } from "lucide-react";
 import { listMeetings } from "@/entities/meeting/api/queries";
 import { listMyWorkspaces } from "@/entities/workspace/api/queries";
 import { UploadForm } from "@/features/meeting-record/ui/upload-form";
+import { DeleteMeetingButton } from "@/features/meeting-record/ui/delete-meeting-button";
 import { Card, CardHeader, CardTitle } from "@/shared/ui/card";
 import { StatusPill } from "@/shared/ui/status-pill";
 import { EmptyState } from "@/shared/ui/empty-state";
@@ -46,23 +47,28 @@ export default async function MeetingsPage() {
             />
           ) : (
             meetings.map((m) => (
-              <Link key={m.id} href={`/meetings/${m.id}`}>
-                <Card className="transition-colors hover:bg-surface-2">
-                  <CardHeader className="flex-row items-center justify-between space-y-0 px-4 py-3">
-                    <CardTitle className="text-[14px]">{m.title}</CardTitle>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(m.created_at).toLocaleDateString("ko-KR")}
-                      </span>
-                      <StatusPill
-                        tone={m.status === "done" ? "success" : "warning"}
-                      >
-                        {m.status === "done" ? "완료" : "대기 중"}
-                      </StatusPill>
-                    </div>
-                  </CardHeader>
-                </Card>
-              </Link>
+              <div key={m.id} className="flex items-center gap-2">
+                <Link href={`/meetings/${m.id}`} className="min-w-0 flex-1">
+                  <Card className="transition-colors hover:bg-surface-2">
+                    <CardHeader className="flex-row items-center justify-between space-y-0 px-4 py-3">
+                      <CardTitle className="truncate text-[14px]">
+                        {m.title}
+                      </CardTitle>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(m.created_at).toLocaleDateString("ko-KR")}
+                        </span>
+                        <StatusPill
+                          tone={m.status === "done" ? "success" : "warning"}
+                        >
+                          {m.status === "done" ? "완료" : "대기 중"}
+                        </StatusPill>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                </Link>
+                <DeleteMeetingButton meetingId={m.id} />
+              </div>
             ))
           )}
         </section>

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Sparkles } from "lucide-react";
 import { inviteMember } from "@/entities/workspace/api/actions";
 import { ASSIGNABLE_ROLES } from "@/entities/workspace/model/member-permissions";
 import type { Role } from "@/shared/types/database";
@@ -68,6 +68,20 @@ export function InviteMemberForm({ workspaceId }: { workspaceId: string }) {
           ))}
         </SelectContent>
       </Select>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="shrink-0 text-primary"
+        onClick={() => {
+          setEmail("demo.invitee@taskflow.dev");
+          setRole("member");
+        }}
+        aria-label="시안 이메일"
+        title="시안 이메일"
+      >
+        <Sparkles className="h-4 w-4" />
+      </Button>
       <Button onClick={submit} disabled={pending || !email.trim()}>
         <UserPlus className="h-4 w-4" />
         {pending ? "추가 중…" : "초대"}

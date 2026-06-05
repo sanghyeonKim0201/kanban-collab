@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ActionItems } from "@/features/meeting-to-cards/ui/action-items";
+import { DeleteMeetingButton } from "@/features/meeting-record/ui/delete-meeting-button";
 import type { MeetingDetail } from "@/entities/meeting/api/queries";
 import { Button } from "@/shared/ui/button";
 import { StatusPill } from "@/shared/ui/status-pill";
@@ -39,9 +40,12 @@ export function MeetingDetailPanel({ detail }: { detail: MeetingDetail }) {
       {/* 헤더 */}
       <div className="flex items-start justify-between gap-4">
         <h1 className="text-2xl font-bold text-foreground">{meeting.title}</h1>
-        <StatusPill tone={meeting.status === "done" ? "success" : "warning"}>
-          {meeting.status === "done" ? "완료" : "대기 중"}
-        </StatusPill>
+        <div className="flex items-center gap-3">
+          <StatusPill tone={meeting.status === "done" ? "success" : "warning"}>
+            {meeting.status === "done" ? "완료" : "대기 중"}
+          </StatusPill>
+          <DeleteMeetingButton meetingId={meeting.id} redirectTo="/meetings" withLabel />
+        </div>
       </div>
 
       {/* 액션 버튼 */}
