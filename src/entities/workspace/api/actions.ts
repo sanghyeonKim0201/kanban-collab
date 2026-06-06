@@ -109,6 +109,13 @@ async function fetchMemberRoles(
 }
 
 /**
+ * 멤버 관리 액션 결과. 예상된 검증 실패는 throw 하지 않고 이 형태로 반환한다.
+ * (Server Action 의 throw 는 프로덕션에서 "Server Components render" 에러로
+ *  표면화되고 메시지도 가려지므로, 사용자 대상 검증은 결과값으로 전달한다.)
+ */
+export type MemberActionResult = { ok: true } | { ok: false; message: string };
+
+/**
  * FR: 이메일로 기존 가입 사용자를 멤버로 초대.
  * 권한·이메일 조회는 SECURITY DEFINER RPC(invite_member_by_email)가 담당.
  */
@@ -116,34 +123,36 @@ export async function inviteMember(
   workspaceId: string,
   email: string,
   role: Role,
-) {
-  const parsedEmail = emailSchema.parse(email);
-  if (!isAssignableRole(role)) throw new Error("부여할 수 없는 역할입니다");
+): Promise<MemberActionResult> {
+  const parsed = emailSchema.safeParse(email);
+  if (!parsed.success)
+    return { ok: false, message: "올바른 이메일을 입력하세요" };
+  if (!isAssignableRole(role))
+    return { ok: false, message: "부여할 수 없는 역할입니다" };
   const { supabase } = await requireUser();
 
   const { data, error } = await supabase.rpc("invite_member_by_email", {
     p_workspace_id: workspaceId,
-    p_email: parsedEmail,
+    p_email: parsed.data,
     p_role: role,
   });
-  if (error) throw new Error(error.message);
+  if (error) return { ok: false, message: "초대에 실패했습니다" };
 
   switch (data as string) {
     case "ok":
-      break;
+      revalidatePath(`/workspaces/${workspaceId}`);
+      return { ok: true };
     case "forbidden":
-      throw new Error("멤버를 초대할 권한이 없습니다");
+      return { ok: false, message: "멤버를 초대할 권한이 없습니다" };
     case "not_found":
-      throw new Error("가입된 사용자가 아닙니다");
+      return { ok: false, message: "가입된 사용자가 아닙니다" };
     case "already_member":
-      throw new Error("이미 멤버입니다");
+      return { ok: false, message: "이미 멤버입니다" };
     case "bad_role":
-      throw new Error("부여할 수 없는 역할입니다");
+      return { ok: false, message: "부여할 수 없는 역할입니다" };
     default:
-      throw new Error("초대에 실패했습니다");
+      return { ok: false, message: "초대에 실패했습니다" };
   }
-
-  revalidatePath(`/workspaces/${workspaceId}`);
 }
 
 /** FR: 멤버 역할 변경. owner/admin 만. 마지막 owner 강등 방지. */
@@ -151,19 +160,20 @@ export async function changeMemberRole(
   workspaceId: string,
   userId: string,
   role: Role,
-) {
-  if (!isAssignableRole(role)) throw new Error("부여할 수 없는 역할입니다");
+): Promise<MemberActionResult> {
+  if (!isAssignableRole(role))
+    return { ok: false, message: "부여할 수 없는 역할입니다" };
   const { supabase, user } = await requireUser();
 
   const myRole = await myWorkspaceRole(supabase, workspaceId, user.id);
   if (!canManageMembers(myRole)) {
-    throw new Error("멤버를 관리할 권한이 없습니다");
+    return { ok: false, message: "멤버를 관리할 권한이 없습니다" };
   }
 
   const roles = await fetchMemberRoles(supabase, workspaceId);
   const target = roles.find((r) => r.user_id === userId);
-  if (!target) throw new Error("멤버를 찾을 수 없습니다");
-  if (target.role === role) return; // 변경 없음 — no-op
+  if (!target) return { ok: false, message: "멤버를 찾을 수 없습니다" };
+  if (target.role === role) return { ok: true }; // 변경 없음 — no-op
 
   if (
     wouldRemoveLastOwner(
@@ -172,7 +182,7 @@ export async function changeMemberRole(
       role,
     )
   ) {
-    throw new Error("마지막 소유자의 역할은 변경할 수 없습니다");
+    return { ok: false, message: "마지막 소유자의 역할은 변경할 수 없습니다" };
   }
 
   const { error } = await supabase
@@ -180,26 +190,30 @@ export async function changeMemberRole(
     .update({ role })
     .eq("workspace_id", workspaceId)
     .eq("user_id", userId);
-  if (error) throw new Error(error.message);
+  if (error) return { ok: false, message: "역할 변경에 실패했습니다" };
 
   revalidatePath(`/workspaces/${workspaceId}`);
+  return { ok: true };
 }
 
 /** FR: 멤버 제거. owner/admin 만. 자기 자신·마지막 owner 제거 방지. */
-export async function removeMember(workspaceId: string, userId: string) {
+export async function removeMember(
+  workspaceId: string,
+  userId: string,
+): Promise<MemberActionResult> {
   const { supabase, user } = await requireUser();
 
   const myRole = await myWorkspaceRole(supabase, workspaceId, user.id);
   if (!canManageMembers(myRole)) {
-    throw new Error("멤버를 관리할 권한이 없습니다");
+    return { ok: false, message: "멤버를 관리할 권한이 없습니다" };
   }
   if (userId === user.id) {
-    throw new Error("자기 자신은 제거할 수 없습니다");
+    return { ok: false, message: "자기 자신은 제거할 수 없습니다" };
   }
 
   const roles = await fetchMemberRoles(supabase, workspaceId);
   const target = roles.find((r) => r.user_id === userId);
-  if (!target) throw new Error("멤버를 찾을 수 없습니다");
+  if (!target) return { ok: false, message: "멤버를 찾을 수 없습니다" };
 
   if (
     wouldRemoveLastOwnerByDeletion(
@@ -207,7 +221,7 @@ export async function removeMember(workspaceId: string, userId: string) {
       target.role,
     )
   ) {
-    throw new Error("마지막 소유자는 제거할 수 없습니다");
+    return { ok: false, message: "마지막 소유자는 제거할 수 없습니다" };
   }
 
   const { error } = await supabase
@@ -215,7 +229,8 @@ export async function removeMember(workspaceId: string, userId: string) {
     .delete()
     .eq("workspace_id", workspaceId)
     .eq("user_id", userId);
-  if (error) throw new Error(error.message);
+  if (error) return { ok: false, message: "멤버 제거에 실패했습니다" };
 
   revalidatePath(`/workspaces/${workspaceId}`);
+  return { ok: true };
 }

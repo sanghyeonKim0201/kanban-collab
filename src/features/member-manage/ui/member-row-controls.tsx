@@ -56,11 +56,15 @@ export function MemberRowControls({
     if (nextRole === "owner") return; // owner 부여는 비허용 — 무시.
     start(async () => {
       try {
-        await changeMemberRole(workspaceId, userId, nextRole);
-        toast.success("역할을 변경했습니다");
-        router.refresh();
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "역할 변경 실패");
+        const res = await changeMemberRole(workspaceId, userId, nextRole);
+        if (res.ok) {
+          toast.success("역할을 변경했습니다");
+          router.refresh();
+        } else {
+          toast.error(res.message);
+        }
+      } catch {
+        toast.error("역할 변경 실패");
       }
     });
   }
@@ -73,11 +77,15 @@ export function MemberRowControls({
     }
     start(async () => {
       try {
-        await removeMember(workspaceId, userId);
-        toast.success("멤버를 제거했습니다");
-        router.refresh();
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "멤버 제거 실패");
+        const res = await removeMember(workspaceId, userId);
+        if (res.ok) {
+          toast.success("멤버를 제거했습니다");
+          router.refresh();
+        } else {
+          toast.error(res.message);
+        }
+      } catch {
+        toast.error("멤버 제거 실패");
       }
     });
   }

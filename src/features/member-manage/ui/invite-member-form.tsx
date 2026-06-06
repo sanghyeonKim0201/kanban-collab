@@ -29,13 +29,17 @@ export function InviteMemberForm({ workspaceId }: { workspaceId: string }) {
     if (!value) return;
     start(async () => {
       try {
-        await inviteMember(workspaceId, value, role);
-        toast.success("멤버를 추가했습니다");
-        setEmail("");
-        setRole("member");
-        router.refresh();
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "초대에 실패했습니다");
+        const res = await inviteMember(workspaceId, value, role);
+        if (res.ok) {
+          toast.success("멤버를 추가했습니다");
+          setEmail("");
+          setRole("member");
+          router.refresh();
+        } else {
+          toast.error(res.message);
+        }
+      } catch {
+        toast.error("초대에 실패했습니다");
       }
     });
   }
