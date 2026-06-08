@@ -12,3 +12,8 @@ npm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 coverage
+.gstack/
+
+# 제출 PDF 빌드 중간 산출물 (scripts/build-submission-pdf.mjs 로 재생성)
+docs/screenshots/.resized/
+docs/submission/합본.md

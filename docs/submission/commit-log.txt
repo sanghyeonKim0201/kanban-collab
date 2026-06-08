@@ -1,0 +1,85 @@
+a93ee8a docs: 최종 제출 핸드오프 — 구현현황(FR/NFR)·기여도·시연 시나리오 골격
+5f7a62a fix(member): 멤버 액션 검증 실패를 throw 대신 결과 반환 + 시연 문서 갱신
+ac75d1c feat(meeting,demo): 실시간 회의·회의록 삭제·시안 버튼·로그인 검증 완화
+59ef13d docs: 시연 가이드 — 순서·흐름·강조점·Q&A 대비
+1833bc7 feat(workspace): 멤버 초대/역할변경/제거 — 관리자 팀원 관리(명세 2.3)
+ffcb8cf refactor(ui): 네이티브 select·date 입력을 shadcn Select·DatePicker로 교체 (명세 2.4 shadcn/UI 준수)
+2f5be4f feat(auth): 역할별 편집 권한 분리 — member 카드 편집 허용·guest 읽기전용(FR-27) + updateCard 충돌 가드(FR-13)
+de74c1d feat(card): 카드 변경 활동 이력 자동 기록(FR-09)
+042ac5a feat(github): TF-123 커밋 패턴 지원(FR-18) + 이슈→카드 생성(FR-17)
+61fe16d feat(meeting): 회의록 구조화(참석자/안건/결정사항)(FR-23) + 추출 태스크 추가 전 수정(FR-25)
+c1b027b feat(ai): 우선순위 마감일 반영·저장(FR-20) + 담당자 추천(FR-21) + 피드백 few-shot 반영(FR-22)
+bdc91e0 feat(board,card): 보드 이름변경/삭제(FR-01) + 카드 생성 속성·마감일 편집(FR-03)
+5a4270b feat(board): 카드 필터/검색 — 담당자·우선순위·마감일·텍스트(FR-06)
+5ecf3f1 feat(card): 댓글 수정/삭제(FR-08) + 레이블 붙이기/떼기(FR-07)
+02b74c2 docs(solutions): PostgREST PGRST201 — FK 추가가 기존 임베드 깨뜨림 학습 기록
+189725f fix(card): 카드 상세 PGRST201 회귀 — boards 임베드 FK 명시
+2086cf8 Merge pull request #2 from sanghyeonKim0201/pr-automation-hardening
+4e8c6cf fix(card): 동시 카드 생성 position 충돌 재시도 (createCard·meeting action item)
+8a81c03 feat(pr-automation): 웹훅 멱등키 + 동시 append 충돌 견고화 (설계 섹션 11 후속)
+8b2cb6a docs(solutions): PR 웹훅 배지 비-라이프사이클 회귀 학습 기록
+fee7846 feat(pr-automation): 자동화 활동 피드 + 실시간 토스트
+0268fce feat(pr-automation): 보드별 매핑 설정 UI + 저장 액션
+ad9a5ec fix(pr-automation): PR URL 저장 후 router.refresh — 패널·배지 즉시 반영
+cab87c6 feat(pr-automation): PR 상태 배지 + 카드 PR URL 입력
+14d015e docs(spec): PR 자동화 알려진 한계 기록 — 멱등키·동시 position 충돌(후속 견고화)
+70eb9a9 feat(pr-automation): 웹훅 PR 자동화 분기 — 카드 이동·상태·활동로그
+40203ce feat(pr-automation): 전이 판정 순수 함수 + 테스트
+65bb551 feat(pr-automation): 스키마(boards 매핑·cards pr상태·board_activity) + 타입
+77745e2 docs(plan): GitHub PR 자동화 구현 계획 (7 태스크)
+0a49598 docs(spec): GitHub PR 워크플로우 자동화 설계
+fe476c4 fix(workspace): listMyWorkspaces 현재 유저 필터 추가 — 목록 중복 제거 (#1)
+098f044 fix(column-edit): 이름변경 이중 commit 멱등 가드
+b63c5e5 feat(column): deleteColumn 카드-존재 가드 (데이터 안전)
+7092a72 fix(column-edit): 컬럼 드래그 over 해석 견고화(드롭존/카드 위 드롭 매핑)
+36a96f4 feat(column-edit): 컬럼 정렬 dnd + 보드 통합 + 권한 게이팅
+9364657 refactor(column-edit): useEffect prop 동기화 제거 — 편집 시작 시점 setDraft(name)으로 충분
+8e0eb0e fix(column-edit): grill-me 지적 사항 반영 — draft stale 동기화·pending 가드·dead code 제거
+9d51953 feat(column-edit): 컬럼 헤더 인라인 편집·메뉴 + 컬럼 추가 UI
+b82fa04 feat(column-edit): 컬럼 add/rename/remove 액션 래퍼 훅
+906efed feat(board): 스토어 컬럼 rename/remove/reorder 낙관적 메서드(+테스트)
+132b6fc feat(board): 현재 유저 보드 역할 조회 쿼리
+e1549b8 docs(plan): 컬럼 커스터마이즈 UI 구현 계획 (6 태스크)
+bb0ee45 docs(spec): 컬럼 커스터마이즈 UI 설계 (인라인 편집·삭제가드·재정렬·권한)
+f3f5b43 feat(ui): 설정 화면 full-bleed + Webhook URL 복사 버튼
+d9414fe feat(ui): 회의록 2단 레이아웃 + 상세 full-bleed·탭 제어·추출 후 자동 전환
+f30add7 feat(ui): 카드 상세 폴리시 — 제목 편집 힌트·섹션 구분·sticky 저장바·탭 제어
+cba7d48 feat(ui): 보드 컬럼 높이 내용맞춤 + 통계 패널 개요 카드로 정돈
+8a651cf feat(ui): 워크스페이스 상세 보드/멤버 카드 그리드 통일 + 보드 카드 수 메타
+6174c0d feat(ui): 사이드바 접힘/펼침 토글 + 워크스페이스 카드 메타·full-bleed 레이아웃
+b71aca5 chore: preview launch.json autoPort (포트 충돌 회피)
+32a4538 fix(ai): service_role을 선택값으로 디커플링
+9f7b81a feat(ai): LLM/STT base URL·STT 모델을 env로 분리
+d1e65ac docs(solutions): subagent-driven 실행(SendMessage 부재) 학습 캡처
+fa8c0a4 feat(ui): 생성 다이얼로그·presence 다크 마감 + 폰트/컬럼 스크롤 폴리시
+51639ed feat(ui): 회의록·설정·인증 화면 다크 재스타일
+207b05b feat(ui): 카드 상세 우측 슬라이드오버 + 개요/활동 탭
+35d1437 feat(ui): 워크스페이스 목록·상세 다크 재스타일 + 쉘 스크롤
+d0c343d feat(board): WorkPane 툴바·컨텍스트 패널·리스트 뷰 토글
+703bd6a feat(board): 컬럼/카드 다크 Linear 재스타일 + 우선순위 바
+cec38b1 fix(ui): WorkPane h-screen→h-full (부모 높이 상속)
+0273fd8 feat(ui): 아이콘 레일 + WorkPane 2단 쉘 재구성
+757d59e feat(board): 보드 진행률/상태 순수 헬퍼(+테스트) + 카운트 쿼리
+cce91c2 fix(ui): SlideOver focus ring/duration + SegmentedControl use client
+8936742 fix(ui): SlideOver 닫기 버튼 sr-only 라벨 추가(a11y)
+1a0b670 feat(ui): Radix tabs·switch·slide-over + stat-card 프리미티브
+8847237 feat(ui): sparkline·status-pill·progress·segmented·empty-state 프리미티브
+7562963 feat(ui): 무의존 스파크라인 path 헬퍼 + 테스트
+8191bfb fix(ui): badge base에 border 폭 복구(정렬 일관성)
+c9b0b9d feat(ui): shared/ui 프리미티브 다크 Linear 재스타일
+9b792f3 feat(ui): 다크 단일 디자인 토큰 + Inter 폰트 기반
+57f1467 docs(ui): UI 리디자인 구현 계획 (다크 Linear, 13 태스크)
+c52a9c3 docs(ui): linear 풍 다크 UI 리디자인 디자인 스펙
+e806408 feat(m4): meeting upload + stt + task extraction → cards
+1085703 feat(m4): llm/stt wrapper + ai classify route + suggest-only ui
+5223e08 feat(m3): github webhook hmac verify + route + event ingestion + settings
+5c99003 feat(m2): realtime cdc + presence + broadcast cursors scaffold
+17d2977 docs: setup readme + spec ch.12 checklist; chore: m1 integration green
+2a97063 feat: card detail panel (intercept modal + fallback page)
+6476e2c feat: kanban board view + dnd-kit drag/drop (optimistic + conflict rollback)
+e6ce8be feat: board/column/card entities + crud server actions
+4833fb3 feat: workspaces list/create + boards + members view
+166a6ea feat: auth (email + google/github oauth) + auth guard + app shell
+2f78e23 feat: lexorank position util (tdd, 7 tests green)
+489ac05 feat: supabase clients + full schema + rls migrations
+d0596ea chore: scaffold next14 + ts + tailwind + fsd lint
